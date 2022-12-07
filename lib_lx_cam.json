@@ -6,7 +6,7 @@
     "data": [
         "Capture_Status",
         "Geotag_Status",
-        "FTP_Status",
+        "Send_Status",
         "Captured_GPS",
         "Geotagged_GPS"
     ],

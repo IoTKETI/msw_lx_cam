@@ -30,9 +30,6 @@ let count = 0;
 
 let status = 'Init';
 
-let drone_name = process.argv[2];
-console.log('[captureImage]', drone_name);
-
 init();
 
 function init() {
@@ -44,15 +41,15 @@ function init() {
         lib.name = my_lib_name;
         lib.target = 'armv7l';
         lib.description = "[name]";
-        lib.scripts = './' + my_lib_name;
-        lib.data = ["Capture_Status", "Geotag_Status", "FTP_Status", "Captured_GPS", "Geotagged_GPS"];
+        lib.scripts = "./lib_lx_cam.js";
+        lib.data = ["Capture_Status", "Geotag_Status", "Send_Status", "Captured_GPS", "Geotagged_GPS"];
         lib.control = ['Capture'];
     }
 
     control_topic = '/MUV/control/' + lib["name"] + '/' + lib["control"][0];
     my_status_topic = '/MUV/data/' + lib["name"] + '/' + lib["data"][0];
     captured_position_topic = '/MUV/data/' + lib["name"] + '/' + lib["data"][3];
-    gpi_topic = '/MUV/control/' + lib['name'] + '/global_position_int';
+    gpi_topic = '/TELE/drone/gpi';
 
     lib_mqtt_connect('localhost', 1883, gpi_topic, control_topic);
 
@@ -102,7 +99,16 @@ function init() {
             }
         });
         camera_test.on('error', function (code) {
-            console.log('[checkCamera] error: ' + code);
+            if (code.toString().includes('gphoto2 ENOENT')) {
+                console.log('Please install gphoto library');
+                status = 'Error';
+                let msg = status + ' - Please install gphoto library';
+                lib_mqtt_client.publish(my_status_topic, msg);
+
+                setTimeout(install_gphoto, 100);
+            } else {
+                console.log('[checkCamera] error: ' + code);
+            }
         });
     }
     checkCamera();
