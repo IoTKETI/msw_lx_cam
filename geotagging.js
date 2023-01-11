@@ -158,7 +158,7 @@ function init() {
     my_status_topic = '/MUV/data/' + lib["name"] + '/' + lib["data"][1];
     geotagged_position_topic = '/MUV/data/' + lib["name"] + '/' + lib["data"][4];
 
-    lib_mqtt_connect('localhost', 1883);
+    lib_mqtt_connect('127.0.0.1', 1883);
 
     setTimeout(geotag_image, 100);
 
@@ -317,7 +317,7 @@ function geotag_image() {
                 //         }
                 //     });
                 // }
-                setTimeout(move_image, 1, './' + files[0], './' + geotagging_dir + '/' + files[0].replace('.jpg', '_' + img_count.toString().padStart(2, '0') + '.jpg'));
+                setTimeout(move_image, 1, './' + files[0], './' + geotagging_dir + '/' + files[0]);
                 img_count++
             } else {
                 setTimeout(geotag_image, 100);

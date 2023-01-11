@@ -51,7 +51,7 @@ function init() {
     captured_position_topic = '/MUV/data/' + lib["name"] + '/' + lib["data"][3];
     gpi_topic = '/TELE/drone/gpi';
 
-    lib_mqtt_connect('localhost', 1883, gpi_topic, control_topic);
+    lib_mqtt_connect('127.0.0.1', 1883, gpi_topic, control_topic);
 
     const checkCamera = () => {
         let camera_test = spawn("gphoto2", ["--summary"]);

@@ -15,9 +15,9 @@ let ftp_dir = '';
 let drone_name = process.argv[3];
 
 let ftp_client = null;
-let ftp_host = 'gcs.iotocean.org';
+let ftp_host = 'data.iotocean.org';
 let ftp_user = 'lx_ftp';
-let ftp_pw = 'lx123!';
+let ftp_pw = 'lx123';
 
 let geotagging_dir = 'Geotagged';
 
@@ -52,7 +52,7 @@ function init() {
     my_status_topic = '/MUV/data/' + lib["name"] + '/' + lib["data"][2];
     control_topic = '/MUV/control/' + lib["name"] + '/' + lib["control"][0];
 
-    lib_mqtt_connect('localhost', 1883, control_topic);
+    lib_mqtt_connect('127.0.0.1', 1883, control_topic);
 }
 
 function lib_mqtt_connect(broker_ip, port, control) {
@@ -87,6 +87,7 @@ function lib_mqtt_connect(broker_ip, port, control) {
         lib_mqtt_client.on('message', (topic, message) => {
             if (topic === control) {
                 if (message.toString().includes('g')) {
+                    console.log(message)
                     if (status === 'Init' || status === 'Finish') {
                         console.log(message.toString());
                         let command_arr = message.toString().split(' ');

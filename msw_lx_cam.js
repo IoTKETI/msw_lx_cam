@@ -268,7 +268,7 @@ function msw_mqtt_connect(broker_ip, port) {
 
 let local_msw_mqtt_client = null;
 
-local_msw_mqtt_connect('localhost', 1883);
+local_msw_mqtt_connect('127.0.0.1', 1883);
 
 function local_msw_mqtt_connect(broker_ip, port) {
     if (local_msw_mqtt_client == null) {
