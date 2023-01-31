@@ -34,6 +34,42 @@ let memFormat = 'vfat';
 let pw = "raspberry";
 let dir_name = '';
 
+const checkUSB = new Promise((resolve, reject) => {
+    // 외장 메모리 존재 여부 확인
+    exec("echo " + pw + " | sudo -S fdisk -l | grep sda", (error, stdout, stderr) => {
+        if (error) {
+            console.log('[getUSB] error:', error);
+            reject(error);
+        }
+        if (stdout) {
+            console.log('[getUSB] stdout: ' + stdout);
+            if (stdout.includes('sda')) {
+                let memoryList = stdout.split('\n');
+                memoryList.forEach(mem => {
+                    if (mem.includes('sda1')) {
+                        let memoryInfo = mem.split(' ');
+                        let memPath = memoryInfo[0];
+                        if (memoryInfo[memoryInfo.length - 2] === 'FAT32') {
+                            memFormat = 'vfat';
+                        } else if (memoryInfo[memoryInfo.length - 2] === 'HPFS/NTFS/exFAT') {
+                            memFormat = 'ntfs';
+                        }
+                        setUSB(memPath, memFormat).then(res => {
+                            resolve(res);
+                        }).catch(error => {
+                            reject(error);
+                        });
+                    }
+                });
+            }
+        }
+        if (stderr) {
+            console.log('[getUSB] stderr: ' + stderr);
+            reject(stderr);
+        }
+    });
+});
+
 init();
 
 function init() {
@@ -278,42 +314,6 @@ function move_image(from, to) {
         });
     }
 }
-
-const checkUSB = new Promise((resolve, reject) => {
-    // 외장 메모리 존재 여부 확인
-    exec("echo " + pw + " | sudo -S fdisk -l | grep sda", (error, stdout, stderr) => {
-        if (error) {
-            console.log('[getUSB] error:', error);
-            reject(error);
-        }
-        if (stdout) {
-            console.log('[getUSB] stdout: ' + stdout);
-            if (stdout.includes('sda')) {
-                let memoryList = stdout.split('\n');
-                memoryList.forEach(mem => {
-                    if (mem.includes('sda1')) {
-                        let memoryInfo = mem.split(' ');
-                        let memPath = memoryInfo[0];
-                        if (memoryInfo[memoryInfo.length - 2] === 'FAT32') {
-                            memFormat = 'vfat';
-                        } else if (memoryInfo[memoryInfo.length - 2] === 'HPFS/NTFS/exFAT') {
-                            memFormat = 'ntfs';
-                        }
-                        setUSB(memPath, memFormat).then(res => {
-                            resolve(res);
-                        }).catch(error => {
-                            reject(error);
-                        });
-                    }
-                });
-            }
-        }
-        if (stderr) {
-            console.log('[getUSB] stderr: ' + stderr);
-            reject(stderr);
-        }
-    });
-});
 
 function setUSB(path, format) {
     return new Promise((resolve, reject) => {
