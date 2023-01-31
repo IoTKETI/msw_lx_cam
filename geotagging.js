@@ -199,52 +199,52 @@ function geotag_image() {
             if (files.length > 0) {
                 console.time('geotag');
 
-                // let jpeg = fs.readFileSync(files[0]);
-                // let data = jpeg.toString("binary");
-                // let exifObj = piexif.load(data);
-                //
-                // try {
-                //     gps = gps_filename.findOne({image: files[0]})._settledValue;
-                // } catch (e) {
-                //     let edit_file = moment(moment(files[0].substr(0, files[0].length - 4)).add("-1", "s")).format("YYYY-MM-DDTHH:mm:ss") + '.jpg';
-                //     gps = gps_filename.findOne({image: edit_file})._settledValue;
-                //     console.log(edit_file);
-                // }
-                // try {
-                //     if (gps.hasOwnProperty('lat')) {
-                //         exifObj.GPS[piexif.GPSIFD.GPSLatitudeRef] = (gps.lat / 10000000) < 0 ? 'S' : 'N';
-                //         exifObj.GPS[piexif.GPSIFD.GPSLatitude] = Degree2DMS(gps.lat / 10000000);
-                //     }
-                // } catch (e) {
-                //     exifObj.GPS[piexif.GPSIFD.GPSLatitude] = Degree2DMS(0.0);
-                // }
-                // try {
-                //     if (gps.hasOwnProperty('lon')) {
-                //         exifObj.GPS[piexif.GPSIFD.GPSLongitudeRef] = (gps.lon / 10000000) < 0 ? 'W' : 'E';
-                //         exifObj.GPS[piexif.GPSIFD.GPSLongitude] = Degree2DMS(gps.lon / 10000000);
-                //     }
-                // } catch (e) {
-                //     exifObj.GPS[piexif.GPSIFD.GPSLongitude] = Degree2DMS(0.0);
-                // }
-                // try {
-                //     if (gps.hasOwnProperty('alt')) {
-                //         if (gps.alt < 0.0) {
-                //             gps.alt = 0.0;
-                //         }
-                //         exifObj.GPS[piexif.GPSIFD.GPSAltitude] = [gps.alt, 1000];
-                //         exifObj.GPS[piexif.GPSIFD.GPSAltitudeRef] = 0;
-                //     }
-                // } catch (e) {
-                //     exifObj.GPS[piexif.GPSIFD.GPSAltitude] = [0.0, 1000];
-                //     exifObj.GPS[piexif.GPSIFD.GPSAltitudeRef] = 0;
-                // }
-                //
-                // let exifbytes = piexif.dump(exifObj);
-                //
-                // let newData = piexif.insert(exifbytes, data);
-                // let newJpeg = Buffer.from(newData, "binary");
-                //
-                // fs.writeFileSync(files[0], newJpeg);
+                let jpeg = fs.readFileSync(files[0]);
+                let data = jpeg.toString("binary");
+                let exifObj = piexif.load(data);
+
+                try {
+                    gps = gps_filename.findOne({image: files[0]})._settledValue;
+                } catch (e) {
+                    let edit_file = moment(moment(files[0].substr(0, files[0].length - 4)).add("-1", "s")).format("YYYY-MM-DDTHH:mm:ss") + '.jpg';
+                    gps = gps_filename.findOne({image: edit_file})._settledValue;
+                    console.log(edit_file);
+                }
+                try {
+                    if (gps.hasOwnProperty('lat')) {
+                        exifObj.GPS[piexif.GPSIFD.GPSLatitudeRef] = (gps.lat / 10000000) < 0 ? 'S' : 'N';
+                        exifObj.GPS[piexif.GPSIFD.GPSLatitude] = Degree2DMS(gps.lat / 10000000);
+                    }
+                } catch (e) {
+                    exifObj.GPS[piexif.GPSIFD.GPSLatitude] = Degree2DMS(0.0);
+                }
+                try {
+                    if (gps.hasOwnProperty('lon')) {
+                        exifObj.GPS[piexif.GPSIFD.GPSLongitudeRef] = (gps.lon / 10000000) < 0 ? 'W' : 'E';
+                        exifObj.GPS[piexif.GPSIFD.GPSLongitude] = Degree2DMS(gps.lon / 10000000);
+                    }
+                } catch (e) {
+                    exifObj.GPS[piexif.GPSIFD.GPSLongitude] = Degree2DMS(0.0);
+                }
+                try {
+                    if (gps.hasOwnProperty('alt')) {
+                        if (gps.alt < 0.0) {
+                            gps.alt = 0.0;
+                        }
+                        exifObj.GPS[piexif.GPSIFD.GPSAltitude] = [gps.alt, 1000];
+                        exifObj.GPS[piexif.GPSIFD.GPSAltitudeRef] = 0;
+                    }
+                } catch (e) {
+                    exifObj.GPS[piexif.GPSIFD.GPSAltitude] = [0.0, 1000];
+                    exifObj.GPS[piexif.GPSIFD.GPSAltitudeRef] = 0;
+                }
+
+                let exifbytes = piexif.dump(exifObj);
+
+                let newData = piexif.insert(exifbytes, data);
+                let newJpeg = Buffer.from(newData, "binary");
+
+                fs.writeFileSync(files[0], newJpeg);
 
                 if (copyable) {
                     // fs.copyFile('./' + files[0], external_memory + '/' + files[0], (err) => {
@@ -262,7 +262,7 @@ function geotag_image() {
                         if (stderr) {
                             console.log('[getUSB] stderr: ' + stderr);
                         }
-                        setTimeout(move_image, 1, './' + files[0], './' + geotagging_dir + '/' + files[0]);
+                        setTimeout(move_image, 100, './' + files[0], './' + geotagging_dir + '/' + files[0]);
                         img_count++;
                     });
                 }
