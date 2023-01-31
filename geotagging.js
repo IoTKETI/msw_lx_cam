@@ -262,11 +262,10 @@ function geotag_image() {
                         if (stderr) {
                             console.log('[getUSB] stderr: ' + stderr);
                         }
+                        setTimeout(move_image, 1, './' + files[0], './' + geotagging_dir + '/' + files[0]);
+                        img_count++;
                     });
                 }
-
-                setTimeout(move_image, 1, './' + files[0], './' + geotagging_dir + '/' + files[0]);
-                img_count++
             } else {
                 setTimeout(geotag_image, 100);
             }
