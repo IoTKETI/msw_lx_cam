@@ -252,7 +252,7 @@ function geotag_image() {
                     //         console.log(err);
                     //     }
                     // });
-                    exec("echo " + pw + " | sudo -S cp " + "./" + files[0], external_memory + "/", (error, stdout, stderr) => {
+                    exec("echo " + pw + " | sudo -S cp " + "./" + files[0] + external_memory + "/", (error, stdout, stderr) => {
                         if (error) {
                             console.log('[getUSB] error:', error);
                         }
