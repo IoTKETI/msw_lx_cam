@@ -3,7 +3,9 @@
  */
 
 const fs = require('fs');
-const moment = require("moment");
+require("moment-timezone");
+const moment = require('moment')
+moment.tz.setDefault("Asia/Seoul");
 const sendFTP = require("basic-ftp");
 const {nanoid} = require("nanoid");
 const mqtt = require("mqtt");
