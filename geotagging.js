@@ -247,9 +247,20 @@ function geotag_image() {
                 fs.writeFileSync(files[0], newJpeg);
 
                 if (copyable) {
-                    fs.copyFile('./' + files[0], external_memory + '/' + files[0], (err) => {
-                        if (err) {
-                            console.log(err);
+                    // fs.copyFile('./' + files[0], external_memory + '/' + files[0], (err) => {
+                    //     if (err) {
+                    //         console.log(err);
+                    //     }
+                    // });
+                    exec("echo " + pw + " | sudo -S cp " + "./" + files[0], external_memory + "/", (error, stdout, stderr) => {
+                        if (error) {
+                            console.log('[getUSB] error:', error);
+                        }
+                        if (stdout) {
+                            console.log('[getUSB] stdout: ' + stdout);
+                        }
+                        if (stderr) {
+                            console.log('[getUSB] stderr: ' + stderr);
                         }
                     });
                 }
