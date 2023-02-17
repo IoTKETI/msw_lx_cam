@@ -49,9 +49,10 @@ try {
 }
 
 let msw_sub_mobius_topic = [];
+let msw_sub_local_topic = [];
 
 let msw_sub_fc_topic = [];
-msw_sub_fc_topic.push('/Mobius/' + config.gcs + '/Drone_Data/' + config.drone + '/global_position_int');
+msw_sub_fc_topic.push('/TELE/drone/gpi');
 
 let msw_sub_lib_topic = [];
 
@@ -66,11 +67,14 @@ function init() {
 
                     for (let i = 0; i < config.lib[idx].control.length; i++) {
                         let sub_container_name = config.lib[idx].control[i];
-                        let _topic = '/Mobius/' + config.gcs + '/Mission_Data/' + config.drone + '/' + config.name + '/' + sub_container_name;
-                        msw_mqtt_client.subscribe(_topic);
-                        local_msw_mqtt_client.subscribe(_topic);
-                        msw_sub_mobius_topic.push(_topic);
-                        console.log('[msw_mqtt] msw_sub_mobius_topic[' + i + ']: ' + _topic);
+                        let _lte_topic = '/Mobius/' + config.gcs + '/Mission_Data/' + config.drone + '/' + config.name + '/' + sub_container_name;
+                        let _rf_topic = '/TELE/' + config.name + '/' + sub_container_name;
+                        msw_mqtt_client.subscribe(_lte_topic);
+                        local_msw_mqtt_client.subscribe(_rf_topic);
+                        msw_sub_mobius_topic.push(_lte_topic);
+                        msw_sub_local_topic.push(_rf_topic);
+                        console.log('[msw_mqtt] msw_sub_mobius_topic[' + i + ']: ' + _lte_topic);
+                        console.log('[msw_mqtt] msw_sub_local_topic[' + i + ']: ' + _rf_topic);
                     }
 
                     for (let i = 0; i < config.lib[idx].data.length; i++) {
@@ -246,7 +250,7 @@ function msw_mqtt_connect(broker_ip, port) {
                             if (jsonObj.pc['m2m:sgn'].nev.rep) {
                                 if (jsonObj.pc['m2m:sgn'].nev.rep['m2m:cin']) {
                                     let cinObj = jsonObj.pc['m2m:sgn'].nev.rep['m2m:cin']
-                                    if (getType(cinObj.con) == 'string') {
+                                    if (getType(cinObj.con) === 'string') {
                                         local_msw_mqtt_client.publish(lib_ctl_topic, cinObj.con);
                                     } else {
                                         local_msw_mqtt_client.publish(lib_ctl_topic, JSON.stringify(cinObj.con));
@@ -315,6 +319,9 @@ function local_msw_mqtt_connect(broker_ip, port) {
                     }
                 }
             }
+            if (msw_sub_local_topic.includes(topic)) {
+                setTimeout(on_receive_from_muv, parseInt(Math.random() * 5), topic.substring(0, topic.length - 3), message.toString());
+            }
         });
 
         local_msw_mqtt_client.on('error', function (err) {
@@ -323,14 +330,79 @@ function local_msw_mqtt_connect(broker_ip, port) {
     }
 }
 
+let t_id = null;
+let disconnected = true;
+let MissionControl = {};
+let sequence = 0;
+
 function on_receive_from_muv(topic, str_message) {
     // console.log('[' + topic + '] ' + str_message);
+    // TODO: check sequence
+    let topic_arr = topic.split('/');
+    if (topic_arr[1] === 'TELE') {
+        if (t_id) {
+            clearTimeout(t_id);
+            disconnected = false;
+        }
 
-    parseControlMission(topic, str_message);
+        t_id = setTimeout(() => {
+            disconnected = true;
+            t_id = null;
+            MissionControl = {};
+        }, 200);
+
+        let recv_sequence;
+
+        if (getType(str_message) === 'string') {
+            recv_sequence = parseInt(str_message.substring(0, 2), 16);
+            str_message = str_message.substring(2, str_message.length-1);
+        } else {
+            str_message = JSON.parse(str_message);
+            recv_sequence = str_message.sequence;
+            str_message = JSON.stringify(str_message);
+        }
+        MissionControl[recv_sequence] = str_message;
+        console.log('[RF]', str_message);
+
+        parseControlMission(topic, str_message);
+    } else if (topic_arr[1] === 'Mobius' && disconnected) {
+
+        let recv_sequence;
+
+        if (getType(str_message) === 'string') {
+            recv_sequence = parseInt(str_message.substring(0, 2), 16);
+            str_message = str_message.substring(2, str_message.length-1);
+        } else {
+            str_message = JSON.parse(str_message);
+            recv_sequence = str_message.sequence;
+            str_message = JSON.stringify(str_message);
+        }
+
+        if (MissionControl.hasOwnProperty(recv_sequence)) {
+            delete MissionControl[recv_sequence];
+            return;
+        }
+
+        console.log('[LTE]', recv_sequence);
+
+        parseControlMission(topic, str_message);
+    }
 }
+
 
 function on_receive_from_lib(topic, str_message) {
     // console.log('[' + topic + '] ' + str_message + '\n');
+
+    if (getType(str_message) === 'string') {
+        str_message = (sequence.toString(16).padStart(2, '0')) + str_message;
+    } else {
+        str_message = JSON.parse(str_message);
+        str_message.sequence = sequence;
+        str_message = JSON.stringify(str_message);
+    }
+
+    sequence++;
+    sequence %= 255;
 
     parseDataMission(topic, str_message);
 }
@@ -385,3 +457,28 @@ function parseFcData(topic, str_message) {
     } else {
     }
 }
+
+function getType(p) {
+    var type = 'string';
+    if (Array.isArray(p)) {
+        type = 'array';
+    } else if (typeof p === 'string') {
+        try {
+            var _p = JSON.parse(p);
+            if (typeof _p === 'object') {
+                type = 'string_object';
+            } else {
+                type = 'string';
+            }
+        } catch (e) {
+            type = 'string';
+            return type;
+        }
+    } else if (p != null && typeof p === 'object') {
+        type = 'object';
+    } else {
+        type = 'other';
+    }
+
+    return type;
+};
