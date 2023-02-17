@@ -14,7 +14,7 @@ global.sh_man = require('./http_man');
 let fc = {};
 let config = {};
 
-config.name = 'msw_lx_cam';
+config.name = 'msw_lx_cam-FTP';
 global.drone_info = '';
 
 try {
