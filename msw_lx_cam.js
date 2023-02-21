@@ -74,7 +74,7 @@ function init() {
                         msw_sub_mobius_topic.push(_lte_topic);
                         msw_sub_local_topic.push(_rf_topic);
                         console.log('[msw_mqtt] msw_sub_mobius_topic[' + i + ']: ' + _lte_topic);
-                        console.log('[msw_mqtt] msw_sub_local_topic[' + i + ']: ' + _rf_topic);
+                        console.log('[local_msw_mqtt] msw_sub_local_topic[' + i + ']: ' + _rf_topic);
                     }
 
                     for (let i = 0; i < config.lib[idx].data.length; i++) {
@@ -266,6 +266,8 @@ function msw_mqtt_connect(broker_ip, port) {
 
         msw_mqtt_client.on('error', function (err) {
             console.log(err.message);
+            msw_mqtt_client = null;
+            msw_mqtt_connect(broker_ip);
         });
     }
 }
@@ -326,6 +328,8 @@ function local_msw_mqtt_connect(broker_ip, port) {
 
         local_msw_mqtt_client.on('error', function (err) {
             console.log(err.message);
+            local_msw_mqtt_client = null;
+            local_msw_mqtt_connect(broker_ip);
         });
     }
 }
@@ -333,11 +337,9 @@ function local_msw_mqtt_connect(broker_ip, port) {
 let t_id = null;
 let disconnected = true;
 let MissionControl = {};
-let sequence = 0;
 
 function on_receive_from_muv(topic, str_message) {
     // console.log('[' + topic + '] ' + str_message);
-    // TODO: check sequence
     let topic_arr = topic.split('/');
     if (topic_arr[1] === 'TELE') {
         if (t_id) {
@@ -389,6 +391,7 @@ function on_receive_from_muv(topic, str_message) {
     }
 }
 
+let sequence = 0;
 
 function on_receive_from_lib(topic, str_message) {
     // console.log('[' + topic + '] ' + str_message + '\n');
@@ -431,7 +434,15 @@ function parseDataMission(topic, str_message) {
 
         let topic_arr = topic.split('/');
         let data_topic = '/Mobius/' + config.gcs + '/Mission_Data/' + config.drone + '/' + config.name + '/' + topic_arr[topic_arr.length - 1];
-        msw_mqtt_client.publish(data_topic, str_message);
+        if (msw_mqtt_client !== null) {
+            msw_mqtt_client.publish(data_topic, str_message);
+        }
+        let _topic_arr = topic.split('/');
+        let local_data_topic = '/TELE/' + _topic_arr[3].replace('lib_', 'msw_') + '/' + _topic_arr[4];
+        if (local_msw_mqtt_client !== null) {
+            local_msw_mqtt_client.publish(local_data_topic, str_message);
+        }
+        // TODO: LTE&RF cin 생성? RF로 먼저 생성하고 LTE로 생성? LTE로 먼저 생성하고 RF로 생성?
         sh_man.crtci(data_topic + '?rcn=0', 0, str_message, null, function (rsc, res_body, parent, socket) {
         });
     } catch (e) {
