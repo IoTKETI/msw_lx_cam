@@ -442,7 +442,7 @@ function parseDataMission(topic, str_message) {
         if (local_msw_mqtt_client !== null) {
             local_msw_mqtt_client.publish(local_data_topic, str_message);
         }
-        // TODO: LTE&RF cin 생성? RF로 먼저 생성하고 LTE로 생성? LTE로 먼저 생성하고 RF로 생성?
+        // RF로 먼저 생성하고 LTE로 생성
         sh_man.crtci(data_topic + '?rcn=0', 0, str_message, null, function (rsc, res_body, parent, socket) {
         });
     } catch (e) {
@@ -468,28 +468,3 @@ function parseFcData(topic, str_message) {
     } else {
     }
 }
-
-function getType(p) {
-    var type = 'string';
-    if (Array.isArray(p)) {
-        type = 'array';
-    } else if (typeof p === 'string') {
-        try {
-            var _p = JSON.parse(p);
-            if (typeof _p === 'object') {
-                type = 'string_object';
-            } else {
-                type = 'string';
-            }
-        } catch (e) {
-            type = 'string';
-            return type;
-        }
-    } else if (p != null && typeof p === 'object') {
-        type = 'object';
-    } else {
-        type = 'other';
-    }
-
-    return type;
-};
