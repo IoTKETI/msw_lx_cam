@@ -68,7 +68,7 @@ function init() {
                     for (let i = 0; i < config.lib[idx].control.length; i++) {
                         let sub_container_name = config.lib[idx].control[i];
                         let _lte_topic = '/Mobius/' + config.gcs + '/Mission_Data/' + config.drone + '/' + config.name + '/' + sub_container_name;
-                        let _rf_topic = '/TELE/' + config.name + '/' + sub_container_name;
+                        let _rf_topic = '/TELE/' + config.name + '/' + sub_container_name + '/rf';
                         msw_mqtt_client.subscribe(_lte_topic);
                         local_msw_mqtt_client.subscribe(_rf_topic);
                         msw_sub_mobius_topic.push(_lte_topic);
@@ -355,7 +355,7 @@ function on_receive_from_muv(topic, str_message) {
 
         if (getType(str_message) === 'string') {
             recv_sequence = parseInt(str_message.substring(0, 2), 16);
-            str_message = str_message.substring(2, str_message.length-1);
+            str_message = str_message.substring(2, str_message.length);
         } else {
             str_message = JSON.parse(str_message);
             recv_sequence = str_message.sequence;
@@ -371,7 +371,7 @@ function on_receive_from_muv(topic, str_message) {
 
         if (getType(str_message) === 'string') {
             recv_sequence = parseInt(str_message.substring(0, 2), 16);
-            str_message = str_message.substring(2, str_message.length-1);
+            str_message = str_message.substring(2, str_message.length);
         } else {
             str_message = JSON.parse(str_message);
             recv_sequence = str_message.sequence;
