@@ -295,11 +295,10 @@ function move_image(from, to) {
         console.time('[Geo]move')
         fs.copyFile(from, to, (err) => {
             if (err) {
-                console.log(err);
+                console.log('[Move]:', err);
             }
             fs.unlink(from, (err) => {
                 console.timeEnd('[Geo]move')
-                console.log(from)
                 status = 'Geotagging';
                 count++;
                 let msg = status + ' ' + count;
