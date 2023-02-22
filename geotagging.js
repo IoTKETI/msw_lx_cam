@@ -255,13 +255,13 @@ function geotag_image() {
                     // });
                     exec("echo " + pw + " | sudo -S cp " + "./" + files[0] + ' ' + external_memory + "/", (error, stdout, stderr) => {
                         if (error) {
-                            console.log('[getUSB] error:', error);
+                            console.log('[copy] error:', error);
                         }
                         if (stdout) {
-                            console.log('[getUSB] stdout: ' + stdout);
+                            console.log('[copy] stdout: ' + stdout);
                         }
                         if (stderr) {
-                            console.log('[getUSB] stderr: ' + stderr);
+                            console.log('[copy] stderr: ' + stderr);
                         }
                         setTimeout(move_image, 100, './' + files[0], './' + geotagging_dir + '/' + files[0]);
                         img_count++;
@@ -313,7 +313,7 @@ function move_image(from, to) {
                 }
                 lib_mqtt_client.publish(geotagged_position_topic, JSON.stringify(gps));
 
-                setTimeout(geotag_image, 100);
+                setTimeout(geotag_image, 200);
             });
         });
     } catch (e) {
