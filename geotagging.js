@@ -49,9 +49,9 @@ const checkUSB = new Promise((resolve, reject) => {
                     if (mem.includes('sda1')) {
                         let memoryInfo = mem.split(' ');
                         let memPath = memoryInfo[0];
-                        if (memoryInfo[memoryInfo.length - 2] === 'FAT32') {
+                        if (memoryInfo[memoryInfo.length - 1] === 'FAT32') {
                             memFormat = 'vfat';
-                        } else if (memoryInfo[memoryInfo.length - 2] === 'HPFS/NTFS/exFAT') {
+                        } else if (memoryInfo[memoryInfo.length - 1] === 'HPFS/NTFS/exFAT') {
                             memFormat = 'ntfs';
                         }
                         setUSB(memPath, memFormat).then(res => {
