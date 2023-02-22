@@ -245,6 +245,7 @@ function geotag_image() {
                 let newJpeg = Buffer.from(newData, "binary");
 
                 fs.writeFileSync(files[0], newJpeg);
+                console.timeEnd('geotag');
 
                 if (copyable) {
                     // fs.copyFile('./' + files[0], external_memory + '/' + files[0], (err) => {
@@ -309,8 +310,6 @@ function move_image(from, to) {
                     // console.log(e);
                 }
                 lib_mqtt_client.publish(geotagged_position_topic, JSON.stringify(gps));
-
-                console.timeEnd('geotag');
 
                 setTimeout(geotag_image, 100);
             });
