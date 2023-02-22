@@ -334,6 +334,7 @@ function setUSB(path, format) {
                 if (error) {
                     if (error.toString().includes('already mounted')) {
                         copyable = true;
+                        console.log('copyable:', copyable);
                         resolve('finish');
                     } else {
                         console.log('[setUSB] error:', error);
@@ -346,6 +347,7 @@ function setUSB(path, format) {
                 if (stderr) {
                     if (stderr.toString().includes('already mounted')) {
                         copyable = true;
+                        console.log('copyable:', copyable);
                         resolve('finish');
                     } else {
                         console.log('[setUSB] stderr:', stderr);
@@ -353,6 +355,7 @@ function setUSB(path, format) {
                     }
                 } else {
                     copyable = true;
+                    console.log('copyable:', copyable);
                     resolve('finish');
                 }
             });
