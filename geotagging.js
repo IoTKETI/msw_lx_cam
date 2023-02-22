@@ -38,11 +38,11 @@ const checkUSB = new Promise((resolve, reject) => {
     // 외장 메모리 존재 여부 확인
     exec("echo " + pw + " | sudo -S fdisk -l | grep sda", (error, stdout, stderr) => {
         if (error) {
-            console.log('[getUSB] error:', error);
+            console.log('[checkUSB] error:', error);
             reject(error);
         }
         if (stdout) {
-            console.log('[getUSB] stdout: ' + stdout);
+            console.log('[checkUSB] stdout: ' + stdout);
             if (stdout.includes('sda')) {
                 let memoryList = stdout.split('\n');
                 memoryList.forEach(mem => {
@@ -266,6 +266,8 @@ function geotag_image() {
                         setTimeout(move_image, 100, './' + files[0], './' + geotagging_dir + '/' + files[0]);
                         img_count++;
                     });
+                } else {
+                    setTimeout(move_image, 100, './' + files[0], './' + geotagging_dir + '/' + files[0]);
                 }
             } else {
                 setTimeout(geotag_image, 100);
