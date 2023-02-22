@@ -339,7 +339,6 @@ let disconnected = true;
 let MissionControl = {};
 
 function on_receive_from_muv(topic, str_message) {
-    // console.log('[' + topic + '] ' + str_message);
     let topic_arr = topic.split('/');
     if (topic_arr[1] === 'TELE') {
         if (t_id) {
@@ -389,6 +388,7 @@ function on_receive_from_muv(topic, str_message) {
 
         parseControlMission(topic, str_message);
     }
+    console.log('[' + topic + '] ' + str_message);
 }
 
 let sequence = 0;
@@ -442,7 +442,6 @@ function parseDataMission(topic, str_message) {
         if (local_msw_mqtt_client !== null) {
             local_msw_mqtt_client.publish(local_data_topic, str_message);
         }
-        // RF로 먼저 생성하고 LTE로 생성
         sh_man.crtci(data_topic + '?rcn=0', 0, str_message, null, function (rsc, res_body, parent, socket) {
         });
     } catch (e) {
