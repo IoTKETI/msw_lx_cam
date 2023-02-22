@@ -60,6 +60,7 @@ function init() {
         camera_test.stdout.on('data', (data) => {
             if (data.toString().includes('For debugging messages, ')) {
                 console.log('[checkCamera] stdout: ' + data);
+                process.kill(capture_command.pid, 'SIGINT');
             } else if (data.toString().includes('Camera summary:')) {
                 let summary = data.toString().split('\n');
                 console.log('[checkCamera] Connected with ' + summary[2].substring(7, summary.length - 2));
@@ -81,6 +82,11 @@ function init() {
                 lib_mqtt_client.publish(my_status_topic, msg);
                 process.kill(camera_test.pid, 'SIGINT');
             } else if (data.includes('*** Error: No camera found. ***')) {
+                status = 'Error';
+                let msg = status + ' - Check the camera power.';
+                lib_mqtt_client.publish(my_status_topic, msg);
+                process.kill(camera_test.pid, 'SIGINT');
+            } else if (data.includes('Could not claim the USB device')){
                 status = 'Error';
                 let msg = status + ' - Check the camera power.';
                 lib_mqtt_client.publish(my_status_topic, msg);
