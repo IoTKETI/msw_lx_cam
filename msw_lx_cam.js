@@ -396,18 +396,19 @@ let sequence = 0;
 function on_receive_from_lib(topic, str_message) {
     // console.log('[' + topic + '] ' + str_message + '\n');
 
+    let seq_str_message;
     if (getType(str_message) === 'string') {
-        str_message = (sequence.toString(16).padStart(2, '0')) + str_message;
+        seq_str_message = (sequence.toString(16).padStart(2, '0')) + str_message;
     } else {
-        str_message = JSON.parse(str_message);
-        str_message.sequence = sequence;
-        str_message = JSON.stringify(str_message);
+        seq_str_message = JSON.parse(str_message);
+        seq_str_message.sequence = sequence;
+        seq_str_message = JSON.stringify(seq_str_message);
     }
 
     sequence++;
     sequence %= 255;
 
-    parseDataMission(topic, str_message);
+    parseDataMission(topic, str_message, seq_str_message);
 }
 
 function on_process_fc_data(topic, str_message) {
@@ -424,7 +425,7 @@ function on_process_fc_data(topic, str_message) {
 
 setTimeout(init, 1000);
 
-function parseDataMission(topic, str_message) {
+function parseDataMission(topic, str_message, seq_str_message) {
     try {
         // let obj_lib_data = JSON.parse(str_message);
         // if (fc.hasOwnProperty('global_position_int')) {
@@ -440,7 +441,7 @@ function parseDataMission(topic, str_message) {
         let _topic_arr = topic.split('/');
         let local_data_topic = '/TELE/' + _topic_arr[3].replace('lib_', 'msw_') + '/' + _topic_arr[4];
         if (local_msw_mqtt_client !== null) {
-            local_msw_mqtt_client.publish(local_data_topic, str_message);
+            local_msw_mqtt_client.publish(local_data_topic, seq_str_message);
         }
         sh_man.crtci(data_topic + '?rcn=0', 0, str_message, null, function (rsc, res_body, parent, socket) {
         });

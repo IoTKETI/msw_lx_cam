@@ -287,22 +287,6 @@ setInterval(() => {
 
 const move_image = ((from, to, image) => {
     return new Promise((resolve, reject) => {
-        // try {
-        //     // fs.renameSync(from + image, to + image);
-        //     fs.copyFile(from + image, to + image, (err) => {
-        //         fs.unlink(from + image, (err) => {
-        //         });
-        //     });
-        // } catch (e) {
-        //     console.log(e);
-        //     fs.stat(to + image, (err) => {
-        //         console.log(err);
-        //         if (err !== null && err.code === "ENOENT") {
-        //             console.log("[sendFTP]사진이 존재하지 않습니다.");
-        //         }
-        //         console.log("[sendFTP]이미 처리 후 옮겨진 사진 (" + image + ") 입니다.");
-        //     });
-        // }
         try {
             fs.copyFile(from + image, to + image, (err) => {
                 fs.unlink(from + image, (err) => {
@@ -314,41 +298,3 @@ const move_image = ((from, to, image) => {
         }
     });
 });
-
-// const checkUSB = new Promise((resolve, reject) => {
-//     // 외장 메모리 존재 여부 확인
-//     fs.readdirSync(external_memory, {withFileTypes: true}).forEach(p => {
-//         let dir = p.name;
-//         if (p.isDirectory()) {
-//             external_memory += dir;
-//             console.log('외장 메모리 경로 : ' + external_memory);
-//         }
-//     });
-//     resolve('finish');
-// });
-//
-// function copy2USB(source, destination) {
-//     try {
-//         if (!fs.existsSync(destination)) {
-//             fs.mkdirSync(destination);
-//             console.log('Create directory ---> ' + destination);
-//         }
-//     } catch (e) {
-//         if (e.includes('permission denied')) {
-//             console.log(e);
-//         }
-//     }
-//
-//     status = 'Copying';
-//     lib_mqtt_client.publish(my_status_topic, status);
-//     console.log('Copy from [ ' + source + ' ] to [ ' + destination + ' ]');
-//
-//     fsextra.copy(source, destination, function (err) {
-//         if (err) {
-//             console.log(err);
-//         }
-//         status = 'Finish';
-//         lib_mqtt_client.publish(my_status_topic, status);
-//         console.log('Finish copy => from [ ' + source + ' ] to [ ' + destination + ' ]');
-//     });
-// }
