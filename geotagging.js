@@ -293,10 +293,7 @@ function Degree2DMS(coordinate) {
 function move_image(from, to) {
     try {
         console.time('[Geo]move')
-        fs.copyFile(from, to, (err) => {
-            if (err) {
-                console.log('[Move]:', err);
-            }
+        fs.copyFile(from, to, () => {
             fs.unlink(from, (err) => {
                 console.timeEnd('[Geo]move')
                 status = 'Geotagging';
@@ -321,6 +318,7 @@ function move_image(from, to) {
                 console.log("[geotagging] 사진이 존재하지 않습니다.");
             }
             console.log("[geotagging] 이미 처리 후 옮겨진 사진 (" + to + ") 입니다.");
+            setTimeout(geotag_image, 200);
         });
     }
 }
