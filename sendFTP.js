@@ -89,7 +89,7 @@ function lib_mqtt_connect(broker_ip, port, control) {
         lib_mqtt_client.on('message', (topic, message) => {
             if (topic === control) {
                 if (message.toString().includes('g')) {
-                    console.log(message)
+                    console.log(message.toString())
                     if (status === 'Init' || status === 'Finish') {
                         console.log(message.toString());
                         let command_arr = message.toString().split(' ');
