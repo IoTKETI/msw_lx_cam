@@ -151,9 +151,7 @@ function send_image() {
                         onUploadProgress: function (progressEvent) {
                             var percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
                             console.log('percentCompleted', percentCompleted);
-                        },
-                        maxContentLength: Infinity,
-                        maxBodyLength: Infinity
+                        }
                     };
 
                     axios.post('http://' + host + ':7560/photo', formData, config)
@@ -177,6 +175,8 @@ function send_image() {
                             } else {
                                 console.timeEnd('Send-' + files[0]);
 
+                                console.log('status code:', response.status, 'response message: ' + JSON.stringify(response.data));
+
                                 // 전송 실패 시 현재 사진 계속 전송 시도
                                 setTimeout(send_image, 100);
                                 return
@@ -185,12 +185,11 @@ function send_image() {
                         .catch(function (error) {
                             console.timeEnd('Send-' + files[0]);
 
-                            console.log(error);
+                            console.log('status code:', error.response.status, 'response message: ' + JSON.stringify(error.response.data));
                             // 전송 실패 시 현재 사진 계속 전송 시도
                             setTimeout(send_image, 100);
                             return
                         });
-                    console.log(status + ' ' + count + ' ' + files[0])
                 } else {
                     if (status === 'Started') {
                         empty_count++;
