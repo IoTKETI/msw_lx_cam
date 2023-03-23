@@ -41,6 +41,9 @@ let mission = '';
 let mission_continue = {};
 let ret_count = 0;
 
+!fs.existsSync('./Wastebasket') && fs.mkdirSync('./Wastebasket');
+
+
 const checkUSB = new Promise((resolve, reject) => {
     // 외장 메모리 존재 여부 확인
     exec("echo " + pw + " | sudo -S fdisk -l | grep sda", (error, stdout, stderr) => {
@@ -269,12 +272,13 @@ function geotag_image() {
                     jpeg = fs.readFileSync(files[0]);
                     data = jpeg.toString("binary");
                     exifObj = piexif.load(data);
-                }
-                catch (e) {
+                } catch (e) {
+                    // 이미지 exif 불러올 때 문제 발생할 경우 휴지통(Wastebasket) 폴더로 이동
                     console.log(e.message, ' ', files[0]);
-                    fs.rmSync('./' + files[0]);
+                    fs.renameSync('./' + files[0], './Wastebasket/' + files[0]);
 
                     setTimeout(geotag_image, 100);
+                    return
                 }
                 try {
                     gps = gps_filename.findOne({image: files[0]})._settledValue;
@@ -347,11 +351,11 @@ function geotag_image() {
                     setTimeout(move_image, 100, './' + files[0], './' + geotagging_dir + '/' + files[0]);
                 }
             } else {
-                if (ret_count>200){
+                if (ret_count > 200) {
                     mission_continue.flag = false;
                     mission_continue.mission = '';
                     fs.writeFileSync('./mission_continue.json', JSON.stringify(mission_continue, null, 4), 'utf8');
-                }else{
+                } else {
                     ret_count++;
                 }
 
