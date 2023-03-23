@@ -296,24 +296,27 @@ function geotag_image() {
                 console.timeEnd('geotag');
 
                 if (copyable) {
-                    // fs.copyFile('./' + files[0], external_memory + '/' + files[0], (err) => {
-                    //     if (err) {
-                    //         console.log(err);
-                    //     }
-                    // });
-                    exec("echo " + pw + " | sudo -S cp " + "./" + files[0] + ' ' + external_memory + "/", (error, stdout, stderr) => {
-                        if (error) {
-                            console.log('[copy] error:', error);
+                    fs.copyFile('./' + files[0], external_memory + '/' + files[0], (err) => {
+                        if (err) {
+                            console.log(err);
                         }
-                        if (stdout) {
-                            console.log('[copy] stdout: ' + stdout);
-                        }
-                        if (stderr) {
-                            console.log('[copy] stderr: ' + stderr);
-                        }
+                        console.log('Copy ' + './' + files[0] + ' to ' + './' + geotagging_dir + '/' + files[0]);
                         setTimeout(move_image, 100, './' + files[0], './' + geotagging_dir + '/' + files[0]);
                         img_count++;
                     });
+                    // exec("echo " + pw + " | sudo -S cp " + "./" + files[0] + ' ' + external_memory + "/", (error, stdout, stderr) => {
+                    //     if (error) {
+                    //         console.log('[copy] error:', error);
+                    //     }
+                    //     if (stdout) {
+                    //         console.log('[copy] stdout: ' + stdout);
+                    //     }
+                    //     if (stderr) {
+                    //         console.log('[copy] stderr: ' + stderr);
+                    //     }
+                    //     setTimeout(move_image, 100, './' + files[0], './' + geotagging_dir + '/' + files[0]);
+                    //     img_count++;
+                    // });
                 } else {
                     setTimeout(move_image, 100, './' + files[0], './' + geotagging_dir + '/' + files[0]);
                 }
