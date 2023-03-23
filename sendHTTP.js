@@ -185,7 +185,7 @@ function send_image() {
                         .catch(function (error) {
                             console.timeEnd('Send-' + files[0]);
 
-                            console.log('status code:', error.response.status, 'response message: ' + JSON.stringify(error.response.data));
+                            console.log('response: ' + JSON.stringify(error.response));
                             // 전송 실패 시 현재 사진 계속 전송 시도
                             setTimeout(send_image, 100);
                             return
