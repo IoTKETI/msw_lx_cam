@@ -103,13 +103,21 @@ function init() {
 
         if (mission_continue.flag) {
             mission = mission_continue.mission;
+
+            usb_memory = external_memory + '/' + moment().format('YYYY-MM-DDTHH') + '-' + mission;
+
+            mission_continue.flag = true;
+            mission_continue.mission = mission;
+            fs.writeFileSync('./mission_continue.json', JSON.stringify(mission_continue, null, 4), 'utf8');
         } else {
             mission = '';
         }
+
     } catch (e) {
         mission_continue.flag = false;
         mission_continue.mission = '';
     }
+
 
     my_status_topic = '/MUV/data/' + lib["name"] + '/' + lib["data"][1];
     geotagged_position_topic = '/MUV/data/' + lib["name"] + '/' + lib["data"][4];
@@ -224,7 +232,7 @@ function lib_mqtt_connect(broker_ip, port) {
                             console.log('Fail to create [ ' + usb_memory + ' ]\n' + error);
                         })
 
-                        setTimeout(geotag_image, 100);
+                        // setTimeout(geotag_image, 100);
                     }
                 }
             } else {
@@ -254,10 +262,20 @@ function geotag_image() {
                 ret_count = 0;
                 console.time('geotag');
 
-                let jpeg = fs.readFileSync(files[0]);
-                let data = jpeg.toString("binary");
-                let exifObj = piexif.load(data);
+                let jpeg;
+                let data;
+                let exifObj;
+                try {
+                    jpeg = fs.readFileSync(files[0]);
+                    data = jpeg.toString("binary");
+                    exifObj = piexif.load(data);
+                }
+                catch (e) {
+                    console.log(e.message, ' ', files[0]);
+                    fs.rmSync('./' + files[0]);
 
+                    setTimeout(geotag_image, 100);
+                }
                 try {
                     gps = gps_filename.findOne({image: files[0]})._settledValue;
                 } catch (e) {
