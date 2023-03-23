@@ -42,7 +42,7 @@ let mission_continue = {};
 let ret_count = 0;
 
 !fs.existsSync('./Wastebasket') && fs.mkdirSync('./Wastebasket');
-!fs.existsSync('./geotagging') && fs.mkdirSync('./geotagging');
+!fs.existsSync('./Wastebasket/geotagging') && fs.mkdirSync('./Wastebasket/geotagging');
 
 const checkUSB = new Promise((resolve, reject) => {
     // 외장 메모리 존재 여부 확인

@@ -34,7 +34,7 @@ init();
 
 function init() {
     !fs.existsSync('./Wastebasket') && fs.mkdirSync('./Wastebasket');
-    !fs.existsSync('./send') && fs.mkdirSync('./send');
+    !fs.existsSync('./Wastebasket/send') && fs.mkdirSync('./Wastebasket/send');
 
     // 지오태깅 후 전송하지 못한 잔여 사진 삭제
     fs.readdir('./' + geotagging_dir + '/', (err, files) => {
