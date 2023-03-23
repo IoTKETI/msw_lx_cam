@@ -208,7 +208,6 @@ function send_image() {
                         setTimeout(send_image, 100);
                         return
                     }
-                    console.timeEnd('Send-' + files[0]);
                 }
             }
         });
