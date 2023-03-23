@@ -32,12 +32,14 @@ let count = 0;
 let copyable = false;
 let external_memory = '/mnt/usb';
 let memFormat = 'vfat';
+let usb_memory = external_memory;
 
 let pw = "raspberry";
 let dir_name = '';
 
 let mission = '';
 let mission_continue = {};
+let ret_count = 0;
 
 const checkUSB = new Promise((resolve, reject) => {
     // 외장 메모리 존재 여부 확인
@@ -210,12 +212,16 @@ function lib_mqtt_connect(broker_ip, port) {
                         let command_arr = message.toString().split(' ');
                         mission = command_arr[2];
 
-                        external_memory = external_memory + '/' + moment().format('YYYY-MM-DDTHH') + '-' + mission;
+                        usb_memory = external_memory + '/' + moment().format('YYYY-MM-DDTHH') + '-' + mission;
 
-                        crtDir(external_memory).then(() => {
-                            console.log('Create directory ---> ' + external_memory);
+                        mission_continue.flag = true;
+                        mission_continue.mission = mission;
+                        fs.writeFileSync('./mission_continue.json', JSON.stringify(mission_continue, null, 4), 'utf8');
+
+                        crtDir(usb_memory).then(() => {
+                            console.log('Create directory ---> ' + usb_memory);
                         }).catch((error) => {
-                            console.log('Fail to create [ ' + external_memory + ' ]\n' + error);
+                            console.log('Fail to create [ ' + usb_memory + ' ]\n' + error);
                         })
 
                         setTimeout(geotag_image, 100);
@@ -245,6 +251,7 @@ function geotag_image() {
             files = files.filter(file => file.toLowerCase().includes('.jpg'));
 
             if (files.length > 0) {
+                ret_count = 0;
                 console.time('geotag');
 
                 let jpeg = fs.readFileSync(files[0]);
@@ -296,7 +303,7 @@ function geotag_image() {
                 console.timeEnd('geotag');
 
                 if (copyable) {
-                    fs.copyFile('./' + files[0], external_memory + '/' + files[0], (err) => {
+                    fs.copyFile('./' + files[0], usb_memory + '/' + files[0], (err) => {
                         if (err) {
                             console.log(err);
                         }
@@ -321,6 +328,14 @@ function geotag_image() {
                     setTimeout(move_image, 100, './' + files[0], './' + geotagging_dir + '/' + files[0]);
                 }
             } else {
+                if (ret_count>200){
+                    mission_continue.flag = false;
+                    mission_continue.mission = '';
+                    fs.writeFileSync('./mission_continue.json', JSON.stringify(mission_continue, null, 4), 'utf8');
+                }else{
+                    ret_count++;
+                }
+
                 setTimeout(geotag_image, 100);
             }
         }
