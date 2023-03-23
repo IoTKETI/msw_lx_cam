@@ -138,60 +138,59 @@ function send_image() {
                     console.log('Find first image - ' + files[0]);
                     console.time('Send-' + files[0]);
 
-                    setTimeout(()=> {
-                        const formData = new FormData();
-                        formData.append('droneName', drone_name);
-                        formData.append('imageid', files[0]);
-                        formData.append('photo', fs.createReadStream('./' + geotagging_dir + '/' + files[0]));
+                    let ImageStream = fs.createReadStream('./' + geotagging_dir + '/' + files[0]);
+                    const formData = new FormData();
+                    formData.append('droneName', drone_name);
+                    formData.append('imageid', files[0]);
+                    formData.append('photo', ImageStream);
 
-                        const config = {
-                            headers: {
-                                'Content-Type': 'multipart/form-data',
-                                'lxactoken': lxactoken
-                            },
-                            onUploadProgress: function (progressEvent) {
-                                var percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                                console.log('percentCompleted', percentCompleted);
-                            }
-                        };
+                    const config = {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                            'lxactoken': lxactoken
+                        },
+                        onUploadProgress: function (progressEvent) {
+                            var percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                            console.log('percentCompleted', percentCompleted);
+                        }
+                    };
 
-                        axios.post('http://' + host + ':7560/photo', formData, config)
-                            .then(function (response) {
-                                console.timeEnd('Send-' + files[0]);
-                                console.log('status code', response.status);
-                                if (response.status === 200) {
-                                    // 전송 완료 시 삭제 후 다음 사진
-                                    count++;
+                    axios.post('http://' + host + ':7560/photo', formData, config)
+                        .then(function (response) {
+                            console.timeEnd('Send-' + files[0]);
+                            console.log('status code', response.status);
+                            if (response.status === 200) {
+                                // 전송 완료 시 삭제 후 다음 사진
+                                count++;
 
-                                    empty_count = 0;
-                                    let msg = status + ' ' + count + ' ' + files[0];
-                                    lib_mqtt_client.publish(my_status_topic, msg);
+                                empty_count = 0;
+                                let msg = status + ' ' + count + ' ' + files[0];
+                                lib_mqtt_client.publish(my_status_topic, msg);
 
-                                    fs.rmSync('./' + geotagging_dir + '/' + files[0]);
+                                fs.rmSync('./' + geotagging_dir + '/' + files[0]);
 
-                                    console.timeEnd('Send-' + files[0]);
-
-                                    setTimeout(send_image, 100);
-                                    return
-                                } else {
-                                    console.timeEnd('Send-' + files[0]);
-
-                                    console.log('status code:', response.status, 'response message: ' + JSON.stringify(response.data));
-
-                                    // 전송 실패 시 현재 사진 계속 전송 시도
-                                    setTimeout(send_image, 100);
-                                    return
-                                }
-                            })
-                            .catch(function (error) {
                                 console.timeEnd('Send-' + files[0]);
 
-                                console.log('response: ' + JSON.stringify(error.response));
+                                setTimeout(send_image, 100);
+                                return
+                            } else {
+                                console.timeEnd('Send-' + files[0]);
+
+                                console.log('status code:', response.status, 'response message: ' + JSON.stringify(response.data));
+
                                 // 전송 실패 시 현재 사진 계속 전송 시도
                                 setTimeout(send_image, 100);
                                 return
-                            });
-                    }, 100);
+                            }
+                        })
+                        .catch(function (error) {
+                            console.timeEnd('Send-' + files[0]);
+
+                            console.log('response: ' + JSON.stringify(error.response));
+                            // 전송 실패 시 현재 사진 계속 전송 시도
+                            setTimeout(send_image, 100);
+                            return
+                        });
                 } else {
                     if (status === 'Started') {
                         empty_count++;
