@@ -42,7 +42,7 @@ try {
         target: 'armv7l',
         description: '[name] [server]',
         scripts: "sh lib_lx_cam.sh",
-        data: ["Capture_Status", "Geotag_Status", "Send_Status", "Captured_GPS", "Geotagged_GPS"],
+        data: ["Capture_Status", "Geotag_Status", "Send_Status", "Captured_GPS", "Geotagged_GPS", "Check_USBMem"],
         control: ['Capture']
     };
     config.lib.push(add_lib);

@@ -8,7 +8,8 @@
         "Geotag_Status",
         "Send_Status",
         "Captured_GPS",
-        "Geotagged_GPS"
+        "Geotagged_GPS",
+        "Check_USBMem"
     ],
     "control": [
         "Capture"
