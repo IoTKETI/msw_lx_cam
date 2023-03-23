@@ -42,7 +42,7 @@ let mission_continue = {};
 let ret_count = 0;
 
 !fs.existsSync('./Wastebasket') && fs.mkdirSync('./Wastebasket');
-
+!fs.existsSync('./geotagging') && fs.mkdirSync('./geotagging');
 
 const checkUSB = new Promise((resolve, reject) => {
     // 외장 메모리 존재 여부 확인
@@ -275,7 +275,7 @@ function geotag_image() {
                 } catch (e) {
                     // 이미지 exif 불러올 때 문제 발생할 경우 휴지통(Wastebasket) 폴더로 이동
                     console.log(e.message, ' ', files[0]);
-                    fs.renameSync('./' + files[0], './Wastebasket/' + files[0]);
+                    fs.renameSync('./' + files[0], './Wastebasket/geotagging' + files[0]);
 
                     setTimeout(geotag_image, 100);
                     return
