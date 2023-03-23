@@ -23,6 +23,8 @@ let lib = {};
 let lib_mqtt_client = null;
 let my_status_topic = '';
 let geotagged_position_topic = '';
+let check_usb_topic = '';
+let control_topic = '';
 
 let status = 'Init';
 let count = 0;
@@ -33,6 +35,9 @@ let memFormat = 'vfat';
 
 let pw = "raspberry";
 let dir_name = '';
+
+let mission = '';
+let mission_continue = {};
 
 const checkUSB = new Promise((resolve, reject) => {
     // 외장 메모리 존재 여부 확인
@@ -85,14 +90,30 @@ function init() {
         lib.target = 'armv7l';
         lib.description = "[name]";
         lib.scripts = "node ./geotagging.js";
-        lib.data = ["Capture_Status", "Geotag_Status", "Send_Status", "Captured_GPS", "Geotagged_GPS"];
+        lib.data = ["Capture_Status", "Geotag_Status", "Send_Status", "Captured_GPS", "Geotagged_GPS", "Check_USBMem"];
         lib.control = ['Capture'];
 
         fs.writeFileSync('./' + my_lib_name + '.json', JSON.stringify(lib, null, 4), 'utf8');
     }
 
+    try {
+        mission_continue = JSON.parse(fs.readFileSync('./mission_continue.json', 'utf8'));
+
+        if (mission_continue.flag) {
+            mission = mission_continue.mission;
+        } else {
+            mission = '';
+        }
+    } catch (e) {
+        mission_continue.flag = false;
+        mission_continue.mission = '';
+    }
+
     my_status_topic = '/MUV/data/' + lib["name"] + '/' + lib["data"][1];
     geotagged_position_topic = '/MUV/data/' + lib["name"] + '/' + lib["data"][4];
+    check_usb_topic = '/MUV/data/' + lib["name"] + '/' + lib["data"][5];
+
+    control_topic = '/MUV/control/' + lib["name"] + '/' + lib["control"][0];
 
     lib_mqtt_connect('127.0.0.1', 1883);
 
@@ -100,53 +121,54 @@ function init() {
 
     let dirName_flag = false;
     checkUSB.then(() => {
-        if (copyable) {
-            dir_name = moment().format('YYYY-MM-DDTHH');
-            try {
-                let files = fs.readdirSync(external_memory, {withFileTypes: true});
-                files.forEach(p => {
-                    let dir = p.name;
-                    if (dir === dir_name) {
-                        if (p.isDirectory()) {
-                            external_memory = external_memory + '/' + dir;
-                            console.log('외장 메모리 경로 : ' + external_memory);
-                            dirName_flag = true;
-                            return;
-                        }
-                    }
-                });
-            } catch (e) {
-                console.log(e)
-                let files = fs.readdirSync(external_memory, {withFileTypes: true});
-                files.forEach(p => {
-                    let dir = p.name;
-                    if (dir === dir_name) {
-                        if (p.isDirectory()) {
-                            external_memory = external_memory + '/' + dir;
-                            console.log('외장 메모리 경로 : ' + external_memory);
-                            dirName_flag = true;
-                            return;
-                        }
-                    }
-                });
-            }
+        console.log('check USB finish........');
+        // if (copyable) {
+        //     dir_name = moment().format('YYYY-MM-DDTHH');
+        //     try {
+        //         let files = fs.readdirSync(external_memory, {withFileTypes: true});
+        //         files.forEach(p => {
+        //             let dir = p.name;
+        //             if (dir === dir_name) {
+        //                 if (p.isDirectory()) {
+        //                     external_memory = external_memory + '/' + dir;
+        //                     console.log('외장 메모리 경로 : ' + external_memory);
+        //                     dirName_flag = true;
+        //                     return;
+        //                 }
+        //             }
+        //         });
+        //     } catch (e) {
+        //         console.log(e)
+        //         let files = fs.readdirSync(external_memory, {withFileTypes: true});
+        //         files.forEach(p => {
+        //             let dir = p.name;
+        //             if (dir === dir_name) {
+        //                 if (p.isDirectory()) {
+        //                     external_memory = external_memory + '/' + dir;
+        //                     console.log('외장 메모리 경로 : ' + external_memory);
+        //                     dirName_flag = true;
+        //                     return;
+        //                 }
+        //             }
+        //         });
+        //     }
+        //
+        //     if (!dirName_flag) {
+        //         external_memory = external_memory + '/' + dir_name;
+        //         // fs.mkdirSync(external_memory);
+        //         crtDir(external_memory).then(() => {
+        //             console.log('Create directory ---> ' + external_memory);
+        //         }).catch((error) => {
+        //             console.log('Fail to create [ ' + external_memory + ' ]\n' + error);
+        //         })
+        //     }
+        // }
 
-            if (!dirName_flag) {
-                external_memory = external_memory + '/' + dir_name;
-                // fs.mkdirSync(external_memory);
-                crtDir(external_memory).then(() => {
-                    console.log('Create directory ---> ' + external_memory);
-                }).catch((error) => {
-                    console.log('Fail to create [ ' + external_memory + ' ]\n' + error);
-                })
-            }
-        }
-
-        setTimeout(geotag_image, 100);
+        // setTimeout(geotag_image, 100);
     }).catch((error) => {
         console.log(error);
 
-        setTimeout(geotag_image, 100);
+        // setTimeout(geotag_image, 100);
     });
 }
 
@@ -172,10 +194,36 @@ function lib_mqtt_connect(broker_ip, port) {
             console.log('[geotag_lib_mqtt_connect] connected to ' + broker_ip);
 
             lib_mqtt_client.publish(my_status_topic, status);
+
+            if (control_topic !== '') {
+                lib_mqtt_client.subscribe(control_topic, () => {
+                    console.log('[geotag_lib_mqtt] lib_sub_control_topic: ' + control_topic);
+                });
+            }
         });
 
         lib_mqtt_client.on('message', function (topic, message) {
-            console.log('From ' + topic + 'message is ' + message.toString());
+            if (topic === control_topic) {
+                if (message.toString().includes('g')) {
+                    if (status === 'Init' || status === 'Finish') {
+                        console.log(message.toString());
+                        let command_arr = message.toString().split(' ');
+                        mission = command_arr[2];
+
+                        external_memory = external_memory + '/' + moment().format('YYYY-MM-DDTHH') + '-' + mission;
+
+                        crtDir(external_memory).then(() => {
+                            console.log('Create directory ---> ' + external_memory);
+                        }).catch((error) => {
+                            console.log('Fail to create [ ' + external_memory + ' ]\n' + error);
+                        })
+
+                        setTimeout(geotag_image, 100);
+                    }
+                }
+            } else {
+                console.log('From ' + topic + 'message is ' + message.toString());
+            }
         });
 
         lib_mqtt_client.on('error', function (err) {
@@ -332,10 +380,17 @@ function setUSB(path, format) {
                 if (error) {
                     if (error.toString().includes('already mounted')) {
                         copyable = true;
-                        console.log('copyable:', copyable);
+                        if (lib_mqtt_client !== null) {
+                            lib_mqtt_client.publish(check_usb_topic, 'OK');
+                        }
+
                         resolve('finish');
                     } else {
                         console.log('[setUSB] error:', error);
+                        if (lib_mqtt_client !== null) {
+                            lib_mqtt_client.publish(check_usb_topic, error.message);
+                        }
+
                         reject(error);
                     }
                 }
@@ -345,19 +400,33 @@ function setUSB(path, format) {
                 if (stderr) {
                     if (stderr.toString().includes('already mounted')) {
                         copyable = true;
-                        console.log('copyable:', copyable);
+                        if (lib_mqtt_client !== null) {
+                            lib_mqtt_client.publish(check_usb_topic, 'OK');
+                        }
+
                         resolve('finish');
                     } else {
                         console.log('[setUSB] stderr:', stderr);
+                        if (lib_mqtt_client !== null) {
+                            lib_mqtt_client.publish(check_usb_topic, error.message);
+                        }
+
                         reject(stderr);
                     }
                 } else {
                     copyable = true;
-                    console.log('copyable:', copyable);
+                    if (lib_mqtt_client !== null) {
+                        lib_mqtt_client.publish(check_usb_topic, 'OK');
+                    }
+
                     resolve('finish');
                 }
             });
         }).catch((error) => {
+            if (lib_mqtt_client !== null) {
+                lib_mqtt_client.publish(check_usb_topic, error.message);
+            }
+
             reject(error);
         });
     });
