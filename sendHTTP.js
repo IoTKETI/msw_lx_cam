@@ -36,21 +36,6 @@ function init() {
     !fs.existsSync('./Wastebasket') && fs.mkdirSync('./Wastebasket');
     !fs.existsSync('./Wastebasket/send') && fs.mkdirSync('./Wastebasket/send');
 
-    // 지오태깅 후 전송하지 못한 잔여 사진 삭제
-    fs.readdir('./' + geotagging_dir + '/', (err, files) => {
-        if (err) {
-            console.log(err);
-            setTimeout(init, 50);
-            return
-        } else {
-            if (files.length > 0) {
-                files.forEach((file) => {
-                    fs.rmSync('./' + geotagging_dir + '/' + file);
-                });
-            }
-        }
-    });
-
     lib = {};
     try {
         lib = JSON.parse(fs.readFileSync('./' + my_lib_name + '.json', 'utf8'));
@@ -109,6 +94,21 @@ function lib_mqtt_connect(broker_ip, port, control) {
                         mission = command_arr[2];
 
                         count = 0;
+
+                        // 지오태깅 후 전송하지 못한 잔여 사진 삭제
+                        fs.readdir('./' + geotagging_dir + '/', (err, files) => {
+                            if (err) {
+                                console.log(err);
+                                setTimeout(init, 50);
+                                return
+                            } else {
+                                if (files.length > 0) {
+                                    files.forEach((file) => {
+                                        fs.rmSync('./' + geotagging_dir + '/' + file);
+                                    });
+                                }
+                            }
+                        });
 
                         status = 'Start';
                         lib_mqtt_client.publish(my_status_topic, status);
