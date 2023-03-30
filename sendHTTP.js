@@ -152,6 +152,8 @@ function send_image() {
                             'Content-Type': 'multipart/form-data',
                             'lxactoken': lxactoken
                         },
+                        maxBodyLength: Infinity,
+                        maxContentLength: Infinity,
                         onUploadProgress: function (progressEvent) {
                             var percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
                             console.log('percentCompleted', percentCompleted);
@@ -174,7 +176,7 @@ function send_image() {
 
                                 console.timeEnd('Send-' + files[0]);
 
-                                setTimeout(send_image, 100);
+                                setTimeout(send_image, 500);
                                 return
                             } else {
                                 console.timeEnd('Send-' + files[0]);
@@ -182,16 +184,16 @@ function send_image() {
                                 console.log('status code:', response.status, 'response message: ' + JSON.stringify(response.data));
 
                                 // 전송 실패 시 현재 사진 계속 전송 시도
-                                setTimeout(send_image, 100);
+                                setTimeout(send_image, 500);
                                 return
                             }
                         })
                         .catch(function (error) {
                             console.timeEnd('Send-' + files[0]);
 
-                            console.log('response: ', error.response.status, '\n' + error.response.data);
+                            console.log('response: ', error.response.status, '\n' + JSON.stringify(error.response.data));
                             // 전송 실패 시 현재 사진 계속 전송 시도
-                            setTimeout(send_image, 100);
+                            setTimeout(send_image, 500);
                             return
                         });
                 } else {
