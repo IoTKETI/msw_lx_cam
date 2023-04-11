@@ -32,9 +32,14 @@ let control_topic = '';
 let status = 'Init';
 let count = 0;
 
+let prev_dir = [];
+let last_prev_dir = '';
+
 init();
 
 function init() {
+    !fs.existsSync('./Wastebasket') && fs.mkdirSync('./Wastebasket');
+
     setTimeout(ftp_connect, 500, ftp_host, ftp_user, ftp_pw, ftp_dir);
 
     lib = {};
@@ -55,6 +60,19 @@ function init() {
     control_topic = '/MUV/control/' + lib["name"] + '/' + lib["control"][0];
 
     lib_mqtt_connect('127.0.0.1', 1883, control_topic);
+
+    check_last_dir().then((result) => {
+        if (result === 'OK') {
+            console.log(last_prev_dir);
+
+            status = 'Start';
+            let msg = status + ' ' + last_prev_dir;
+            lib_mqtt_client.publish(my_status_topic, msg);
+        } else {
+            console.log('Previous photos do not exist.');
+            // TODO: Mobius에 로그 업데이트 여부?
+        }
+    });
 }
 
 function lib_mqtt_connect(broker_ip, port, control) {
@@ -87,13 +105,31 @@ function lib_mqtt_connect(broker_ip, port, control) {
         });
 
         lib_mqtt_client.on('message', (topic, message) => {
+            let command = message.toString();
             if (topic === control) {
-                if (message.toString().includes('g')) {
-                    console.log(message.toString())
+                if (command.substring(2, command.length).includes('g')) {
+                    status = 'Init';
                     if (status === 'Init' || status === 'Finish') {
-                        console.log(message.toString());
-                        let command_arr = message.toString().split(' ');
+                        console.log(command);
+                        let command_arr = command.split(' ');
                         mission = command_arr[2];
+
+                        // 지오태깅 후 전송하지 못한 잔여 사진 휴지통으로 임시 이동
+                        fs.readdir('./' + geotagging_dir + '/', (err, files) => {
+                            if (err) {
+                                console.log(err);
+                                setTimeout(init, 50);
+                                return
+                            } else {
+                                if (files.length > 0) {
+                                    files.forEach((file) => {
+                                        // fs.rmSync('./' + geotagging_dir + '/' + file);
+                                        // TODO: 명령 수신한 시간 이후 사진 포함 확인
+                                        fs.renameSync('./' + geotagging_dir + '/' + file, './Wastebasket/' + file);
+                                    });
+                                }
+                            }
+                        });
 
                         ftp_dir = 'Send-' + moment().format('YYYY-MM-DDTHH') + '-' + mission + '-' + drone_name;
 
@@ -192,84 +228,119 @@ let empty_count = 0;
 
 function send_image_via_ftp() {
     try {
-        fs.readdir('./' + geotagging_dir + '/', (err, files) => {
-            if (err) {
-                console.log(err);
-                setTimeout(send_image_via_ftp, 50);
-                return
-            } else {
-                if (files.length > 0) {
-                    console.time('FTP-' + files[0]);
-                    if (!ftp_client.closed) {
-                        ftp_client.uploadFrom('./' + geotagging_dir + '/' + files[0], "/" + ftp_dir + '/' + files[0])
-                            .then(() => {
-                                console.timeEnd('FTP-' + files[0]);
-                                console.time('Move-' + files[0]);
-                                move_image('./' + geotagging_dir + '/', './' + ftp_dir + '/', files[0])
-                                    .then((result) => {
-                                        if (result === 'finish') {
-                                            count++;
+        if (status === 'Started') {
+            fs.readdir('./' + geotagging_dir + '/', (err, files) => {
+                if (err) {
+                    console.log(err);
+                    setTimeout(send_image_via_ftp, 50);
+                    return
+                } else {
+                    if (files.length > 0) {
+                        console.time('FTP-' + files[0]);
+                        if (!ftp_client.closed) {
+                            ftp_client.uploadFrom('./' + geotagging_dir + '/' + files[0], "/" + ftp_dir + '/' + files[0])
+                                .then(() => {
+                                    console.timeEnd('FTP-' + files[0]);
+                                    console.time('Move-' + files[0]);
+                                    // move_image('./' + geotagging_dir + '/', './' + ftp_dir + '/', files[0])
+                                    //     .then((result) => {
+                                    //         if (result === 'finish') {
+                                    //             count++;
+                                    //
+                                    //             empty_count = 0;
+                                    //             let msg = status + ' ' + count + ' ' + files[0];
+                                    //             lib_mqtt_client.publish(my_status_topic, msg);
+                                    //             console.timeEnd('Move-' + files[0]);
+                                    //
+                                    //             setTimeout(send_image_via_ftp, 100);
+                                    //             return
+                                    //         } else {
+                                    //             setTimeout(send_image_via_ftp, 100);
+                                    //             return
+                                    //         }
+                                    //     })
+                                    //     .catch((err) => {
+                                    //         console.log(err);
+                                    //         fs.stat('./' + ftp_dir + '/' + files[0], (err) => {
+                                    //             console.log(err);
+                                    //             if (err !== null && err.code === "ENOENT") {
+                                    //                 console.log("[sendFTP]사진이 존재하지 않습니다.");
+                                    //             }
+                                    //             console.log("[sendFTP]이미 처리 후 옮겨진 사진 (" + files[0] + ") 입니다.");
+                                    //         });
+                                    //         console.timeEnd('Move-' + files[0]);
+                                    //         setTimeout(send_image_via_ftp, 100);
+                                    //         return
+                                    //     });
+                                    count++;
 
-                                            empty_count = 0;
-                                            let msg = status + ' ' + count + ' ' + files[0];
-                                            lib_mqtt_client.publish(my_status_topic, msg);
-                                            console.timeEnd('Move-' + files[0]);
+                                    empty_count = 0;
+                                    let msg = status + ' ' + count + ' ' + files[0];
+                                    lib_mqtt_client.publish(my_status_topic, msg);
 
-                                            setTimeout(send_image_via_ftp, 100);
-                                            return
-                                        } else {
-                                            setTimeout(send_image_via_ftp, 100);
-                                            return
-                                        }
-                                    })
-                                    .catch((err) => {
+                                    // fs.rmSync('./' + geotagging_dir + '/' + files[0]);
+                                    fs.renameSync('./' + geotagging_dir + '/' + files[0], './' + ftp_dir + '/' + files[0])
+
+                                    console.timeEnd('FTP-' + files[0]);
+                                    setTimeout(send_image_via_ftp, 100);
+                                    return
+                                })
+                                .catch(err => {
+                                    console.log('[sendFTP] Upload Error -', err);
+
+                                    setTimeout(send_image_via_ftp, 100);
+                                    return
+                                })
+                        } else {
+                            ftp_client.close();
+                            ftp_client = null
+
+                            setTimeout(ftp_connect, 100, ftp_host, ftp_user, ftp_pw, ftp_dir);
+                            return
+                        }
+                    } else {
+                        if (status === 'Started') {
+                            empty_count++;
+                            console.log('Waiting - ' + empty_count);
+                            if (empty_count > 200) {
+                                status = 'Finish';
+                                empty_count = 0;
+                                let msg = status + ' ' + count;
+                                lib_mqtt_client.publish(my_status_topic, msg);
+
+                                // Wastebasket에 사진 있으면 Geotagged로 이동해서 전에 못보낸 사진들 전송할 수 있도록 이동
+                                fs.readdir('./Wastebasket/', (err, files) => {
+                                    if (err) {
                                         console.log(err);
-                                        fs.stat('./' + ftp_dir + '/' + files[0], (err) => {
-                                            console.log(err);
-                                            if (err !== null && err.code === "ENOENT") {
-                                                console.log("[sendFTP]사진이 존재하지 않습니다.");
-                                            }
-                                            console.log("[sendFTP]이미 처리 후 옮겨진 사진 (" + files[0] + ") 입니다.");
-                                        });
-                                        console.timeEnd('Move-' + files[0]);
-                                        setTimeout(send_image_via_ftp, 100);
-                                        return
-                                    });
-                            })
-                            .catch(err => {
-                                console.log('[sendFTP] Upload Error -', err);
+                                        status = "[Error]-can't read Wastebasket directory...";
+                                        lib_mqtt_client.publish(my_status_topic, status);
+                                    } else {
+                                        if (files.length > 0) {
+                                            files.forEach((file) => {
+                                                fs.renameSync('./Wastebasket/' + file, './' + geotagging_dir + '/' + file);
+                                            });
+                                        }
+                                    }
+                                });
 
+                                ftp_dir = last_prev_dir;
+                                status = 'Start';
+                                msg = status + ' ' + ftp_dir;
+                                lib_mqtt_client.publish(my_status_topic, msg);
+                            } else {
                                 setTimeout(send_image_via_ftp, 100);
                                 return
-                            })
-                    } else {
-                        ftp_client.close();
-                        ftp_client = null
-
-                        setTimeout(ftp_connect, 100, ftp_host, ftp_user, ftp_pw, ftp_dir);
-                        return
-                    }
-                } else {
-                    if (status === 'Started') {
-                        empty_count++;
-                        console.log('Waiting - ' + empty_count);
-                        if (empty_count > 200) {
-                            status = 'Finish';
-                            empty_count = 0;
-                            let msg = status + ' ' + count;
-                            lib_mqtt_client.publish(my_status_topic, msg);
-
+                            }
                         } else {
                             setTimeout(send_image_via_ftp, 100);
                             return
                         }
-                    } else {
-                        setTimeout(send_image_via_ftp, 100);
-                        return
                     }
                 }
-            }
-        });
+            });
+        } else {
+            // 'Started'가 아닌 상태
+        }
     } catch (e) {
         setTimeout(send_image_via_ftp, 100);
         return
@@ -285,16 +356,34 @@ setInterval(() => {
     }
 }, 1000);
 
-const move_image = ((from, to, image) => {
+// const move_image = ((from, to, image) => {
+//     return new Promise((resolve, reject) => {
+//         try {
+//             fs.copyFile(from + image, to + image, (err) => {
+//                 fs.unlink(from + image, (err) => {
+//                 });
+//             });
+//             resolve('finish');
+//         } catch (e) {
+//             reject('no such file');
+//         }
+//     });
+// });
+
+function check_last_dir() {
     return new Promise((resolve, reject) => {
         try {
-            fs.copyFile(from + image, to + image, (err) => {
-                fs.unlink(from + image, (err) => {
-                });
+            fs.readdirSync('./', {withFileTypes: true}).forEach((p) => {
+                const dir = p.name;
+
+                if (dir.includes('Send') && p.isDirectory()) {
+                    prev_dir.push(dir);
+                }
             });
-            resolve('finish');
+            last_prev_dir = prev_dir[prev_dir.length - 1];
+            resolve('OK');
         } catch (e) {
-            reject('no such file');
+            reject('fail');
         }
     });
-});
+}

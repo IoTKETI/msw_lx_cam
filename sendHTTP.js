@@ -32,6 +32,7 @@ let count = 0;
 
 let prev_dir = [];
 let last_prev_dir = '';
+let send_dir = '';
 
 init();
 
@@ -39,6 +40,7 @@ function init() {
     !fs.existsSync('./Wastebasket') && fs.mkdirSync('./Wastebasket');
     // !fs.existsSync('./Wastebasket/send') && fs.mkdirSync('./Wastebasket/send');
 
+    lib = {};
     try {
         lib = JSON.parse(fs.readFileSync('./' + my_lib_name + '.json', 'utf8'));
     } catch (e) {
@@ -63,7 +65,7 @@ function init() {
             console.log(last_prev_dir);
 
             status = 'Start';
-            let msg = status + ' ' + last_prev_dir;
+            let msg = status + ' ' + send_dir;
             lib_mqtt_client.publish(my_status_topic, msg);
         } else {
             console.log('Previous photos do not exist.');
@@ -131,7 +133,8 @@ function lib_mqtt_connect(broker_ip, port, control) {
                         });
 
                         status = 'Start';
-                        lib_mqtt_client.publish(my_status_topic, status);
+                        let msg = status + ' ' + send_dir;
+                        lib_mqtt_client.publish(my_status_topic, msg);
                     }
                 }
             } else {
@@ -193,7 +196,7 @@ function send_image() {
                                     lib_mqtt_client.publish(my_status_topic, msg);
 
                                     // fs.rmSync('./' + geotagging_dir + '/' + files[0]);
-                                    fs.renameSync('./' + geotagging_dir + '/' + files[0], './' + last_prev_dir + '/' + files[0])
+                                    fs.renameSync('./' + geotagging_dir + '/' + files[0], './' + send_dir + '/' + files[0])
 
                                     console.timeEnd('Send-' + files[0]);
 
@@ -226,7 +229,26 @@ function send_image() {
                                 empty_count = 0;
                                 let msg = status + ' ' + count;
                                 lib_mqtt_client.publish(my_status_topic, msg);
-                                // TODO: Wastebasket에 사진 있으면 Geotagged로 이동해서 전에 못보낸 사진들 전송할 수 있도록 이동
+
+                                // Wastebasket에 사진 있으면 Geotagged로 이동해서 전에 못보낸 사진들 전송할 수 있도록 이동
+                                fs.readdir('./Wastebasket/', (err, files) => {
+                                    if (err) {
+                                        console.log(err);
+                                        status = "[Error]-can't read Wastebasket directory...";
+                                        lib_mqtt_client.publish(my_status_topic, status);
+                                    } else {
+                                        if (files.length > 0) {
+                                            files.forEach((file) => {
+                                                fs.renameSync('./Wastebasket/' + file, './' + geotagging_dir + '/' + file);
+                                            });
+                                        }
+                                    }
+                                });
+
+                                send_dir = last_prev_dir;
+                                status = 'Start';
+                                msg = status + ' ' + send_dir;
+                                lib_mqtt_client.publish(my_status_topic, msg);
                             } else {
                                 setTimeout(send_image, 100);
                                 return
