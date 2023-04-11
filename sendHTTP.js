@@ -30,13 +30,15 @@ let control_topic = '';
 let status = 'Init';
 let count = 0;
 
+let prev_dir = [];
+let last_prev_dir = '';
+
 init();
 
 function init() {
     !fs.existsSync('./Wastebasket') && fs.mkdirSync('./Wastebasket');
-    !fs.existsSync('./Wastebasket/send') && fs.mkdirSync('./Wastebasket/send');
+    // !fs.existsSync('./Wastebasket/send') && fs.mkdirSync('./Wastebasket/send');
 
-    lib = {};
     try {
         lib = JSON.parse(fs.readFileSync('./' + my_lib_name + '.json', 'utf8'));
     } catch (e) {
@@ -53,7 +55,21 @@ function init() {
     my_status_topic = '/MUV/data/' + lib["name"] + '/' + lib["data"][2];
     control_topic = '/MUV/control/' + lib["name"] + '/' + lib["control"][0];
 
+
     lib_mqtt_connect('127.0.0.1', 1883, control_topic);
+
+    check_last_dir().then((result) => {
+        if (result === 'OK') {
+            console.log(last_prev_dir);
+
+            status = 'Start';
+            let msg = status + ' ' + last_prev_dir;
+            lib_mqtt_client.publish(my_status_topic, msg);
+        } else {
+            console.log('Previous photos do not exist.');
+            // TODO: Mobius에 로그 업데이트 여부?
+        }
+    });
 }
 
 function lib_mqtt_connect(broker_ip, port, control) {
@@ -86,16 +102,18 @@ function lib_mqtt_connect(broker_ip, port, control) {
         });
 
         lib_mqtt_client.on('message', (topic, message) => {
+            let command = message.toString();
             if (topic === control) {
-                if (message.toString().includes('g')) {
+                if (command.substring(2, command.length).includes('g')) {
+                    status = 'Init';
                     if (status === 'Init' || status === 'Finish') {
-                        console.log(message.toString());
-                        let command_arr = message.toString().split(' ');
+                        console.log(command);
+                        let command_arr = command.split(' ');
                         mission = command_arr[2];
 
                         count = 0;
 
-                        // 지오태깅 후 전송하지 못한 잔여 사진 삭제
+                        // 지오태깅 후 전송하지 못한 잔여 사진 휴지통으로 임시 이동
                         fs.readdir('./' + geotagging_dir + '/', (err, files) => {
                             if (err) {
                                 console.log(err);
@@ -104,7 +122,9 @@ function lib_mqtt_connect(broker_ip, port, control) {
                             } else {
                                 if (files.length > 0) {
                                     files.forEach((file) => {
-                                        fs.rmSync('./' + geotagging_dir + '/' + file);
+                                        // fs.rmSync('./' + geotagging_dir + '/' + file);
+                                        // TODO: 명령 수신한 시간 이후 사진 포함 확인
+                                        fs.renameSync('./' + geotagging_dir + '/' + file, './Wastebasket/' + file);
                                     });
                                 }
                             }
@@ -121,8 +141,8 @@ function lib_mqtt_connect(broker_ip, port, control) {
 
         lib_mqtt_client.on('error', (err) => {
             console.log(err.message);
-            lib_mqtt_client = null
-            lib_mqtt_connect(broker_ip, port, control)
+            lib_mqtt_client = null;
+            lib_mqtt_connect(broker_ip, port, control);
         });
     }
 }
@@ -131,91 +151,96 @@ let empty_count = 0;
 
 function send_image() {
     try {
-        fs.readdir('./' + geotagging_dir + '/', (err, files) => {
-            if (err) {
-                console.log(err);
-                setTimeout(send_image, 50);
-                return
-            } else {
-                if (files.length > 0) {
-                    console.log('Find first image - ' + files[0]);
-                    console.time('Send-' + files[0]);
+        if (status === 'Started') {
+            fs.readdir('./' + geotagging_dir + '/', (err, files) => {
+                if (err) {
+                    console.log(err);
+                    setTimeout(send_image, 50);
+                    return
+                } else {
+                    if (files.length > 0) {
+                        console.log('Find image - ' + files[0]);
+                        console.time('Send-' + files[0]);
 
-                    let ImageStream = fs.createReadStream('./' + geotagging_dir + '/' + files[0]);
-                    const formData = new FormData();
-                    formData.append('droneName', drone_name);
-                    formData.append('imageid', files[0]);
-                    formData.append('photo', ImageStream);
+                        let ImageStream = fs.createReadStream('./' + geotagging_dir + '/' + files[0]);
+                        const formData = new FormData();
+                        formData.append('droneName', drone_name);
+                        formData.append('imageid', files[0]);
+                        formData.append('photo', ImageStream);
 
-                    const config = {
-                        headers: {
-                            'Content-Type': 'multipart/form-data',
-                            'lxactoken': lxactoken
-                        },
-                        maxBodyLength: Infinity,
-                        maxContentLength: Infinity,
-                        onUploadProgress: function (progressEvent) {
-                            var percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                            console.log('percentCompleted', percentCompleted);
-                        }
-                    };
+                        const config = {
+                            headers: {
+                                'Content-Type': 'multipart/form-data',
+                                'lxactoken': lxactoken
+                            },
+                            maxBodyLength: Infinity,
+                            maxContentLength: Infinity,
+                            onUploadProgress: function (progressEvent) {
+                                var percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                                console.log('percentCompleted', percentCompleted);
+                            }
+                        };
 
-                    axios.post('http://' + host + ':7560/photo', formData, config)
-                        .then(function (response) {
-                            console.timeEnd('Send-' + files[0]);
-                            console.log('status code', response.status);
-                            if (response.status === 200) {
-                                // 전송 완료 시 삭제 후 다음 사진
-                                count++;
+                        axios.post('http://' + host + ':7560/photo', formData, config)
+                            .then(function (response) {
+                                console.log('status code', response.status);
+                                if (response.status === 200) {
+                                    // 전송 완료 시 이동 후 다음 사진
+                                    count++;
 
-                                empty_count = 0;
-                                let msg = status + ' ' + count + ' ' + files[0];
-                                lib_mqtt_client.publish(my_status_topic, msg);
+                                    empty_count = 0;
+                                    let msg = status + ' ' + count + ' ' + files[0];
+                                    lib_mqtt_client.publish(my_status_topic, msg);
 
-                                fs.rmSync('./' + geotagging_dir + '/' + files[0]);
+                                    // fs.rmSync('./' + geotagging_dir + '/' + files[0]);
+                                    fs.renameSync('./' + geotagging_dir + '/' + files[0], './' + last_prev_dir + '/' + files[0])
 
+                                    console.timeEnd('Send-' + files[0]);
+
+                                    setTimeout(send_image, 500);
+                                    return
+                                } else {
+                                    console.timeEnd('Send-' + files[0]);
+
+                                    console.log('status code:', response.status, 'response message: ' + JSON.stringify(response.data));
+
+                                    // 전송 실패 시 현재 사진 계속 전송 시도
+                                    setTimeout(send_image, 500);
+                                    return
+                                }
+                            })
+                            .catch(function (error) {
                                 console.timeEnd('Send-' + files[0]);
 
-                                setTimeout(send_image, 500);
-                                return
-                            } else {
-                                console.timeEnd('Send-' + files[0]);
-
-                                console.log('status code:', response.status, 'response message: ' + JSON.stringify(response.data));
-
+                                console.log('response: ', error.response.status, '\n' + JSON.stringify(error.response.data));
                                 // 전송 실패 시 현재 사진 계속 전송 시도
                                 setTimeout(send_image, 500);
                                 return
+                            });
+                    } else {
+                        if (status === 'Started') {
+                            empty_count++;
+                            console.log('Waiting - ' + empty_count);
+                            if (empty_count > 200) {
+                                status = 'Finish';
+                                empty_count = 0;
+                                let msg = status + ' ' + count;
+                                lib_mqtt_client.publish(my_status_topic, msg);
+                                // TODO: Wastebasket에 사진 있으면 Geotagged로 이동해서 전에 못보낸 사진들 전송할 수 있도록 이동
+                            } else {
+                                setTimeout(send_image, 100);
+                                return
                             }
-                        })
-                        .catch(function (error) {
-                            console.timeEnd('Send-' + files[0]);
-
-                            console.log('response: ', error.response.status, '\n' + JSON.stringify(error.response.data));
-                            // 전송 실패 시 현재 사진 계속 전송 시도
-                            setTimeout(send_image, 500);
-                            return
-                        });
-                } else {
-                    if (status === 'Started') {
-                        empty_count++;
-                        console.log('Waiting - ' + empty_count);
-                        if (empty_count > 200) {
-                            status = 'Finish';
-                            empty_count = 0;
-                            let msg = status + ' ' + count;
-                            lib_mqtt_client.publish(my_status_topic, msg);
                         } else {
                             setTimeout(send_image, 100);
                             return
                         }
-                    } else {
-                        setTimeout(send_image, 100);
-                        return
                     }
                 }
-            }
-        });
+            });
+        } else {
+            // 'Started'가 아닌 상태
+        }
     } catch (e) {
         console.log(e)
         setTimeout(send_image, 100);
@@ -231,3 +256,21 @@ setInterval(() => {
         send_image();
     }
 }, 1000);
+
+function check_last_dir() {
+    return new Promise((resolve, reject) => {
+        try {
+            fs.readdirSync('./', {withFileTypes: true}).forEach((p) => {
+                const dir = p.name;
+
+                if (dir.includes('Send') && p.isDirectory()) {
+                    prev_dir.push(dir);
+                }
+            });
+            last_prev_dir = prev_dir[prev_dir.length - 1];
+            resolve('OK');
+        } catch (e) {
+            reject('fail');
+        }
+    });
+}
