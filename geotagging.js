@@ -315,6 +315,15 @@ function geotag_image() {
                     exifObj.GPS[piexif.GPSIFD.GPSAltitude] = [0.0, 1000];
                     exifObj.GPS[piexif.GPSIFD.GPSAltitudeRef] = 0;
                 }
+                try {
+                    if (gps.hasOwnProperty('hdg')) {
+                        exifObj.GPS[piexif.GPSIFD.GPSImgDirection] = [gps.hdg, 1];
+                        exifObj.GPS[piexif.GPSIFD.GPSImgDirectionRef] = 'T';
+                    }
+                } catch (e) {
+                    exifObj.GPS[piexif.GPSIFD.GPSImgDirection] = [0, 1];
+                    exifObj.GPS[piexif.GPSIFD.GPSImgDirectionRef] = 'T';
+                }
 
                 let exifbytes = piexif.dump(exifObj);
 
