@@ -108,7 +108,7 @@ function lib_mqtt_connect(broker_ip, port, control) {
             if (topic === control) {
                 if (command.substring(2, command.length).includes('g')) {
                     status = 'Init';
-                    if (status === 'Init' || status === 'Start' || status === 'Finish') {
+                    if (status === 'Init' || status === 'Started' || status === 'Finish') {
                         console.log(command);
                         let command_arr = command.split(' ');
                         mission = command_arr[2];
