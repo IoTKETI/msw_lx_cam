@@ -106,7 +106,7 @@ function lib_mqtt_connect(broker_ip, port, control) {
         lib_mqtt_client.on('message', (topic, message) => {
             let command = message.toString();
             if (topic === control) {
-                if (command.substring(2, command.length).includes('g')) {
+                if (command.includes('g')) {
                     status = 'Init';
                     if (status === 'Init' || status === 'Started' || status === 'Finish') {
                         console.log(command);
@@ -133,6 +133,7 @@ function lib_mqtt_connect(broker_ip, port, control) {
                         });
 
                         send_dir = 'Send-' + moment().format('YYYY-MM-DDTHH') + '-' + mission + '-' + drone_name;
+                        console.log('make directory... (' + send_dir + ')');
                         !fs.existsSync(send_dir) && fs.mkdirSync(send_dir);
 
                         status = 'Start';
