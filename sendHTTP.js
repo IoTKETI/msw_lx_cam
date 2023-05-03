@@ -194,7 +194,8 @@ function send_image() {
                                     empty_count = 0;
                                     let msg = status + ' ' + count + ' ' + files[0];
                                     lib_mqtt_client.publish(my_status_topic, msg);
-
+                                    
+                                    // 사진 이동
                                     // fs.rmSync('./' + geotagging_dir + '/' + files[0]);
                                     fs.renameSync('./' + geotagging_dir + '/' + files[0], './' + send_dir + '/' + files[0])
 
@@ -214,8 +215,8 @@ function send_image() {
                             })
                             .catch(function (error) {
                                 console.timeEnd('Send-' + files[0]);
-
-                                console.log('response: ', error.response.status, '\n' + JSON.stringify(error.response.data));
+                                if (error.response)
+                                console.log('response: ', error.response);
                                 // 전송 실패 시 현재 사진 계속 전송 시도
                                 setTimeout(send_image, 500);
                                 return
