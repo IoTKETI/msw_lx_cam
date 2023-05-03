@@ -132,6 +132,8 @@ function lib_mqtt_connect(broker_ip, port, control) {
                             }
                         });
 
+                        send_dir = 'Send-' + moment().format('YYYY-MM-DDTHH') + '-' + mission + '-' + drone_name;
+
                         status = 'Start';
                         let msg = status + ' ' + send_dir;
                         lib_mqtt_client.publish(my_status_topic, msg);
@@ -197,7 +199,9 @@ function send_image() {
 
                                     // 사진 이동
                                     // fs.rmSync('./' + geotagging_dir + '/' + files[0]);
-                                    fs.renameSync('./' + geotagging_dir + '/' + files[0], './' + send_dir + '/' + files[0])
+                                    fs.renameSync('./' + geotagging_dir + '/' + files[0], './' + send_dir + '/' + files[0], () => {
+                                        console.log('moved image( ' + files[0] + ' ) from ' + geotagging_dir + ' to ' + send_dir);
+                                    });
 
                                     console.timeEnd('Send-' + files[0]);
 
@@ -291,9 +295,9 @@ function check_last_dir() {
 
                 if (dir.includes('Send') && p.isDirectory()) {
                     prev_dir.push(dir);
+                    last_prev_dir = prev_dir[prev_dir.length - 1];
                 }
             });
-            last_prev_dir = prev_dir[prev_dir.length - 1];
             resolve('OK');
         } catch (e) {
             reject('fail');
