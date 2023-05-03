@@ -133,6 +133,7 @@ function lib_mqtt_connect(broker_ip, port, control) {
                         });
 
                         send_dir = 'Send-' + moment().format('YYYY-MM-DDTHH') + '-' + mission + '-' + drone_name;
+                        !fs.existsSync(send_dir) && fs.mkdirSync(send_dir);
 
                         status = 'Start';
                         let msg = status + ' ' + send_dir;
