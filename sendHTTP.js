@@ -155,6 +155,7 @@ function lib_mqtt_connect(broker_ip, port, control) {
 }
 
 let empty_count = 0;
+let index = 0;
 
 function send_image() {
     try {
@@ -165,9 +166,17 @@ function send_image() {
                     setTimeout(send_image, 50);
                     return
                 } else {
+                    let image_file = '';
                     if (files.length > 0) {
-                        console.log('Find image - ' + files[0]);
-                        console.time('Send-' + files[0]);
+                        if (files[index].substring(files[index].length-4, files[index].length).toLowerCase()==='.jpg'){
+                            image_file = files[index];
+                        }else {
+                            index++;
+                            setTimeout(send_image, 50);
+                            return
+                        }
+                        console.log('Find image - ' + image_file);
+                        console.time('Send-' + image_file);
 
                         let ImageStream = fs.createReadStream('./' + geotagging_dir + '/' + files[0]);
                         const formData = new FormData();
@@ -203,6 +212,7 @@ function send_image() {
                                     // fs.rmSync('./' + geotagging_dir + '/' + files[0]);
                                     fs.renameSync('./' + geotagging_dir + '/' + files[0], './' + send_dir + '/' + files[0], () => {
                                         console.log('moved image( ' + files[0] + ' ) from ' + geotagging_dir + ' to ' + send_dir);
+                                        index = 0;
                                     });
 
                                     console.timeEnd('Send-' + files[0]);
