@@ -168,12 +168,16 @@ function send_image() {
                 } else {
                     let image_file = '';
                     if (files.length > 0) {
-                        if (files[index].substring(files[index].length-4, files[index].length).toLowerCase()==='.jpg'){
-                            image_file = files[index];
-                        }else {
-                            index++;
-                            setTimeout(send_image, 50);
-                            return
+                        try{
+                            if (files[index].substring(files[index].length-4, files[index].length).toLowerCase()==='.jpg'){
+                                image_file = files[index];
+                            } else {
+                                index++;
+                                setTimeout(send_image, 50);
+                                return
+                            }
+                        } catch (e) {
+                            console.log(files);
                         }
                         console.log('Find image - ' + image_file);
                         console.time('Send-' + image_file);
