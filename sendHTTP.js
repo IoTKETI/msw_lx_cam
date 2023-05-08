@@ -62,7 +62,8 @@ function init() {
 
     check_last_dir().then((result) => {
         if (result === 'OK') {
-            console.log(last_prev_dir);
+            send_dir = last_prev_dir;
+            console.log('[check_last_dir] send_dir -', send_dir);
 
             status = 'Start';
             let msg = status + ' ' + send_dir;
@@ -182,10 +183,10 @@ function send_image() {
                         console.log('Find image - ' + image_file);
                         console.time('Send-' + image_file);
 
-                        let ImageStream = fs.createReadStream('./' + geotagging_dir + '/' + files[0]);
+                        let ImageStream = fs.createReadStream('./' + geotagging_dir + '/' + image_file);
                         const formData = new FormData();
                         formData.append('droneName', drone_name);
-                        formData.append('imageid', files[0]);
+                        formData.append('imageid', image_file);
                         formData.append('photo', ImageStream);
 
                         const config = {
@@ -209,22 +210,22 @@ function send_image() {
                                     count++;
 
                                     empty_count = 0;
-                                    let msg = status + ' ' + count + ' ' + files[0];
+                                    let msg = status + ' ' + count + ' ' + image_file;
                                     lib_mqtt_client.publish(my_status_topic, msg);
 
                                     // 사진 이동
-                                    // fs.rmSync('./' + geotagging_dir + '/' + files[0]);
-                                    fs.renameSync('./' + geotagging_dir + '/' + files[0], './' + send_dir + '/' + files[0], () => {
-                                        console.log('moved image( ' + files[0] + ' ) from ' + geotagging_dir + ' to ' + send_dir);
+                                    // fs.rmSync('./' + geotagging_dir + '/' + image_file);
+                                    fs.renameSync('./' + geotagging_dir + '/' + image_file, './' + send_dir + '/' + image_file, () => {
+                                        console.log('moved image( ' + image_file + ' ) from ' + geotagging_dir + ' to ' + send_dir);
                                         index = 0;
                                     });
 
-                                    console.timeEnd('Send-' + files[0]);
+                                    console.timeEnd('Send-' + image_file);
 
                                     setTimeout(send_image, 500);
                                     return
                                 } else {
-                                    console.timeEnd('Send-' + files[0]);
+                                    console.timeEnd('Send-' + image_file);
 
                                     console.log('status code:', response.status, 'response message: ' + JSON.stringify(response.data));
 
@@ -234,7 +235,7 @@ function send_image() {
                                 }
                             })
                             .catch(function (error) {
-                                console.timeEnd('Send-' + files[0]);
+                                console.timeEnd('Send-' + image_file);
                                 if (error.response) {
                                     console.log('response: ', error.response);
                                 } else {
@@ -263,7 +264,9 @@ function send_image() {
                                     } else {
                                         if (files.length > 0) {
                                             files.forEach((file) => {
-                                                fs.renameSync('./Wastebasket/' + file, './' + geotagging_dir + '/' + file);
+                                                fs.renameSync('./Wastebasket/' + file, './' + geotagging_dir + '/' + file, () => {
+                                                    console.log('moved image( ' + file + ' ) from Wastebasket to ' + geotagging_dir);
+                                                });
                                             });
                                         }
                                     }
