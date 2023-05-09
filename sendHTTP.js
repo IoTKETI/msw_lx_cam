@@ -169,7 +169,7 @@ function send_image() {
                 } else {
                     let image_file = '';
                     if (files.length > 0) {
-                        if (files[index] !== '') {
+                        if (files[index] !== undefined) {
                             if (files[index].substring(files[index].length - 4, files[index].length).toLowerCase() === '.jpg') {
                                 image_file = files[index];
                             } else {
