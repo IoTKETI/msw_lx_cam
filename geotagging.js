@@ -275,7 +275,7 @@ function geotag_image() {
                 } catch (e) {
                     // 이미지 exif 불러올 때 문제 발생할 경우 휴지통(Wastebasket) 폴더로 이동
                     console.log(e.message, ' ', files[0]);
-                    fs.renameSync('./' + files[0], './Wastebasket/geotagging' + files[0]);
+                    fs.renameSync('./' + files[0], './Wastebasket/geotagging/' + files[0]);
 
                     setTimeout(geotag_image, 100);
                     return
