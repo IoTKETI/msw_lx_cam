@@ -256,6 +256,7 @@ function send_image() {
                                 let msg = status + ' ' + count;
                                 lib_mqtt_client.publish(my_status_topic, msg);
 
+                                // TODO: 이전 사진 폴더로 변경하거나 삭제한 파일 원복 안하도록 수정
                                 // Wastebasket에 사진 있으면 Geotagged로 이동해서 전에 못보낸 사진들 전송할 수 있도록 이동
                                 fs.readdir('./Wastebasket/', (err, files) => {
                                     if (err) {
