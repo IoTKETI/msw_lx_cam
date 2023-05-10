@@ -258,7 +258,7 @@ function send_image() {
 
                                 // TODO: 이전 사진 폴더로 변경하거나 삭제한 파일 원복 안하도록 수정
                                 // Wastebasket에 사진 있으면 Geotagged로 이동해서 전에 못보낸 사진들 전송할 수 있도록 이동
-                                fs.readdir('./Wastebasket/', (err, files) => {
+                                fs.readdir('./Wastebasket/', {withFileTypes: true}, (err, files) => {
                                     if (err) {
                                         console.log(err);
                                         status = "[Error]-can't read Wastebasket directory...";
@@ -266,9 +266,19 @@ function send_image() {
                                     } else {
                                         if (files.length > 0) {
                                             files.forEach((file) => {
-                                                fs.renameSync('./Wastebasket/' + file, './' + geotagging_dir + '/' + file, () => {
-                                                    console.log('moved image( ' + file + ' ) from Wastebasket to ' + geotagging_dir);
-                                                });
+                                                if (file.substring(file.length - 4, file.length).toLowerCase() === '.jpg') {
+                                                    fs.renameSync('./Wastebasket/' + file, './' + geotagging_dir + '/' + file, () => {
+                                                        console.log('moved image( ' + file + ' ) from Wastebasket to ' + geotagging_dir);
+                                                    });
+                                                } else {
+                                                    if (!file.isDirectory()) {
+                                                        fs.rmSync('./Wastebasket/' + file, () =>{
+                                                            console.log('Remove ./Wastebasket/' + file + '. It is not .jpg');
+                                                        });
+                                                    } else {
+                                                        // file이 폴더면 패스
+                                                    }
+                                                }
                                             });
                                         }
                                     }
