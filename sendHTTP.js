@@ -266,17 +266,17 @@ function send_image() {
                                     } else {
                                         if (files.length > 0) {
                                             files.forEach((file) => {
-                                                if (file.substring(file.length - 4, file.length).toLowerCase() === '.jpg') {
-                                                    fs.renameSync('./Wastebasket/' + file, './' + geotagging_dir + '/' + file, () => {
-                                                        console.log('moved image( ' + file + ' ) from Wastebasket to ' + geotagging_dir);
+                                                if (file.name.substring(file.name.length - 4, file.name.length).toLowerCase() === '.jpg') {
+                                                    fs.renameSync('./Wastebasket/' + file.name, './' + geotagging_dir + '/' + file.name, () => {
+                                                        console.log('moved image( ' + file.name + ' ) from Wastebasket to ' + geotagging_dir);
                                                     });
                                                 } else {
                                                     if (!file.isDirectory()) {
-                                                        fs.rmSync('./Wastebasket/' + file, () =>{
-                                                            console.log('Remove ./Wastebasket/' + file + '. It is not .jpg');
+                                                        fs.rmSync('./Wastebasket/' + file.name, () =>{
+                                                            console.log('Remove ./Wastebasket/' + file.name + '. It is not .jpg');
                                                         });
                                                     } else {
-                                                        // file이 폴더면 패스
+                                                        // file.name이 폴더면 패스
                                                     }
                                                 }
                                             });
