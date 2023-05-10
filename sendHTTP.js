@@ -256,38 +256,37 @@ function send_image() {
                                 let msg = status + ' ' + count;
                                 lib_mqtt_client.publish(my_status_topic, msg);
 
-                                // TODO: 이전 사진 폴더로 변경하거나 삭제한 파일 원복 안하도록 수정
                                 // Wastebasket에 사진 있으면 Geotagged로 이동해서 전에 못보낸 사진들 전송할 수 있도록 이동
-                                fs.readdir('./Wastebasket/', {withFileTypes: true}, (err, files) => {
-                                    if (err) {
-                                        console.log(err);
-                                        status = "[Error]-can't read Wastebasket directory...";
-                                        lib_mqtt_client.publish(my_status_topic, status);
-                                    } else {
-                                        if (files.length > 0) {
-                                            files.forEach((file) => {
-                                                if (file.name.substring(file.name.length - 4, file.name.length).toLowerCase() === '.jpg') {
-                                                    fs.renameSync('./Wastebasket/' + file.name, './' + geotagging_dir + '/' + file.name, () => {
-                                                        console.log('moved image( ' + file.name + ' ) from Wastebasket to ' + geotagging_dir);
-                                                    });
-                                                } else {
-                                                    if (!file.isDirectory()) {
-                                                        fs.rmSync('./Wastebasket/' + file.name, () =>{
-                                                            console.log('Remove ./Wastebasket/' + file.name + '. It is not .jpg');
-                                                        });
-                                                    } else {
-                                                        // file.name이 폴더면 패스
-                                                    }
-                                                }
-                                            });
-                                        }
-                                    }
-                                });
-
-                                send_dir = last_prev_dir;
-                                status = 'Start';
-                                msg = status + ' ' + send_dir;
-                                lib_mqtt_client.publish(my_status_topic, msg);
+                                // fs.readdir('./Wastebasket/', {withFileTypes: true}, (err, files) => {
+                                //     if (err) {
+                                //         console.log(err);
+                                //         status = "[Error]-can't read Wastebasket directory...";
+                                //         lib_mqtt_client.publish(my_status_topic, status);
+                                //     } else {
+                                //         if (files.length > 0) {
+                                //             files.forEach((file) => {
+                                //                 if (file.name.substring(file.name.length - 4, file.name.length).toLowerCase() === '.jpg') {
+                                //                     fs.renameSync('./Wastebasket/' + file.name, './' + geotagging_dir + '/' + file.name, () => {
+                                //                         console.log('moved image( ' + file.name + ' ) from Wastebasket to ' + geotagging_dir);
+                                //                     });
+                                //                 } else {
+                                //                     if (!file.isDirectory()) {
+                                //                         fs.rmSync('./Wastebasket/' + file.name, () =>{
+                                //                             console.log('Remove ./Wastebasket/' + file.name + '. It is not .jpg');
+                                //                         });
+                                //                     } else {
+                                //                         // file.name이 폴더면 패스
+                                //                     }
+                                //                 }
+                                //             });
+                                //         }
+                                //     }
+                                // });
+                                //
+                                // send_dir = last_prev_dir;
+                                // status = 'Start';
+                                // msg = status + ' ' + send_dir;
+                                // lib_mqtt_client.publish(my_status_topic, msg);
                             } else {
                                 setTimeout(send_image, 100);
                                 return
