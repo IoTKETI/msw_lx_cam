@@ -17,7 +17,7 @@ const lxactoken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImRyb25lX2lkIiwi
 
 let mission = '';
 let drone_name = process.argv[3];
-let host = process.argv[2];
+let host = 'data.iotocean.org';
 
 let geotagging_dir = 'Geotagged';
 
