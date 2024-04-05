@@ -20,7 +20,7 @@ let geotagging_dir = 'Geotagged';
 
 let lib = {};
 
-let lib_mqtt_client = null;
+let dr_mqtt_client = null;
 let my_status_topic = '';
 let geotagged_position_topic = '';
 let check_usb_topic = '';
@@ -42,7 +42,7 @@ let mission_continue = {};
 let ret_count = 0;
 
 // !fs.existsSync('./Wastebasket') && fs.mkdirSync('./Wastebasket');
-!fs.existsSync('./Wastebasket/geotagging') && fs.mkdirSync('./Wastebasket/geotagging',{ recursive: true });
+!fs.existsSync('./Wastebasket/geotagging') && fs.mkdirSync('./Wastebasket/geotagging', {recursive: true});
 
 const checkUSB = new Promise((resolve, reject) => {
     // 외장 메모리 존재 여부 확인
@@ -61,7 +61,8 @@ const checkUSB = new Promise((resolve, reject) => {
                         let memPath = memoryInfo[0];
                         if (memoryInfo[memoryInfo.length - 1] === 'FAT32') {
                             memFormat = 'vfat';
-                        } else if (memoryInfo[memoryInfo.length - 1] === 'HPFS/NTFS/exFAT') {
+                        }
+                        else if (memoryInfo[memoryInfo.length - 1] === 'HPFS/NTFS/exFAT') {
                             memFormat = 'ntfs';
                         }
                         setUSB(memPath, memFormat).then(res => {
@@ -89,7 +90,8 @@ function init() {
     try {
         lib = {};
         lib = JSON.parse(fs.readFileSync('./' + my_lib_name + '.json', 'utf8'));
-    } catch (e) {
+    }
+    catch (e) {
         lib = {};
         lib.name = my_lib_name;
         lib.target = 'armv7l';
@@ -112,11 +114,13 @@ function init() {
             mission_continue.flag = true;
             mission_continue.mission = mission;
             fs.writeFileSync('./mission_continue.json', JSON.stringify(mission_continue, null, 4), 'utf8');
-        } else {
+        }
+        else {
             mission = '';
         }
 
-    } catch (e) {
+    }
+    catch (e) {
         mission_continue.flag = false;
         mission_continue.mission = '';
     }
@@ -128,7 +132,7 @@ function init() {
 
     control_topic = '/MUV/control/' + lib["name"] + '/' + lib["control"][0];
 
-    lib_mqtt_connect('127.0.0.1', 1883);
+    dr_mqtt_connect('127.0.0.1', 1883);
 
     setTimeout(geotag_image, 100);
 
@@ -185,8 +189,8 @@ function init() {
     });
 }
 
-function lib_mqtt_connect(broker_ip, port) {
-    if (lib_mqtt_client == null) {
+function dr_mqtt_connect(broker_ip, port) {
+    if (dr_mqtt_client == null) {
         let connectOptions = {
             host: broker_ip,
             port: port,
@@ -194,28 +198,28 @@ function lib_mqtt_connect(broker_ip, port) {
             keepalive: 10,
             protocolId: "MQTT",
             protocolVersion: 4,
-            clientId: 'lib_mqtt_client_mqttjs_' + my_lib_name + '_' + 'geotag_' + nanoid(15),
+            clientId: 'geotagging_' + my_lib_name + '_' + nanoid(15),
             clean: true,
             reconnectPeriod: 2000,
             connectTimeout: 2000,
             rejectUnauthorized: false
         };
 
-        lib_mqtt_client = mqtt.connect(connectOptions);
+        dr_mqtt_client = mqtt.connect(connectOptions);
 
-        lib_mqtt_client.on('connect', function () {
-            console.log('[geotag_lib_mqtt_connect] connected to ' + broker_ip);
+        dr_mqtt_client.on('connect', () => {
+            console.log('[geotag_dr_mqtt_connect] connected to ' + broker_ip);
 
-            lib_mqtt_client.publish(my_status_topic, status);
+            dr_mqtt_client.publish(my_status_topic, status);
 
             if (control_topic !== '') {
-                lib_mqtt_client.subscribe(control_topic, () => {
+                dr_mqtt_client.subscribe(control_topic, () => {
                     console.log('[geotag_lib_mqtt] lib_sub_control_topic: ' + control_topic);
                 });
             }
         });
 
-        lib_mqtt_client.on('message', function (topic, message) {
+        dr_mqtt_client.on('message', (topic, message) => {
             if (topic === control_topic) {
                 if (message.toString().includes('g')) {
                     if (status === 'Init' || status === 'Finish') {
@@ -238,12 +242,13 @@ function lib_mqtt_connect(broker_ip, port) {
                         // setTimeout(geotag_image, 100);
                     }
                 }
-            } else {
+            }
+            else {
                 console.log('From ' + topic + 'message is ' + message.toString());
             }
         });
 
-        lib_mqtt_client.on('error', function (err) {
+        dr_mqtt_client.on('error', (err) => {
             console.log(err.message);
         });
     }
@@ -258,7 +263,8 @@ function geotag_image() {
             console.log('[Captured Directory] is empty directory..');
 
             setTimeout(geotag_image, 100);
-        } else {
+        }
+        else {
             files = files.filter(file => file.toLowerCase().includes('.jpg'));
 
             if (files.length > 0) {
@@ -272,7 +278,8 @@ function geotag_image() {
                     jpeg = fs.readFileSync(files[0]);
                     data = jpeg.toString("binary");
                     exifObj = piexif.load(data);
-                } catch (e) {
+                }
+                catch (e) {
                     // 이미지 exif 불러올 때 문제 발생할 경우 휴지통(Wastebasket) 폴더로 이동
                     console.log(e.message, ' ', files[0]);
                     fs.renameSync('./' + files[0], './Wastebasket/geotagging/' + files[0]);
@@ -282,7 +289,8 @@ function geotag_image() {
                 }
                 try {
                     gps = gps_filename.findOne({image: files[0]})._settledValue;
-                } catch (e) {
+                }
+                catch (e) {
                     let edit_file = moment(moment(files[0].substr(0, files[0].length - 4)).add("-1", "s")).format("YYYY-MM-DDTHH:mm:ss") + '.jpg';
                     gps = gps_filename.findOne({image: edit_file})._settledValue;
                     console.log(edit_file);
@@ -292,7 +300,8 @@ function geotag_image() {
                         exifObj.GPS[piexif.GPSIFD.GPSLatitudeRef] = (gps.lat / 10000000) < 0 ? 'S' : 'N';
                         exifObj.GPS[piexif.GPSIFD.GPSLatitude] = Degree2DMS(gps.lat / 10000000);
                     }
-                } catch (e) {
+                }
+                catch (e) {
                     exifObj.GPS[piexif.GPSIFD.GPSLatitude] = Degree2DMS(0.0);
                 }
                 try {
@@ -300,7 +309,8 @@ function geotag_image() {
                         exifObj.GPS[piexif.GPSIFD.GPSLongitudeRef] = (gps.lon / 10000000) < 0 ? 'W' : 'E';
                         exifObj.GPS[piexif.GPSIFD.GPSLongitude] = Degree2DMS(gps.lon / 10000000);
                     }
-                } catch (e) {
+                }
+                catch (e) {
                     exifObj.GPS[piexif.GPSIFD.GPSLongitude] = Degree2DMS(0.0);
                 }
                 try {
@@ -311,7 +321,8 @@ function geotag_image() {
                         exifObj.GPS[piexif.GPSIFD.GPSAltitude] = [gps.alt, 1000];
                         exifObj.GPS[piexif.GPSIFD.GPSAltitudeRef] = 0;
                     }
-                } catch (e) {
+                }
+                catch (e) {
                     exifObj.GPS[piexif.GPSIFD.GPSAltitude] = [0.0, 1000];
                     exifObj.GPS[piexif.GPSIFD.GPSAltitudeRef] = 0;
                 }
@@ -320,7 +331,8 @@ function geotag_image() {
                         exifObj.GPS[piexif.GPSIFD.GPSImgDirection] = [gps.hdg, 1];
                         exifObj.GPS[piexif.GPSIFD.GPSImgDirectionRef] = 'T';
                     }
-                } catch (e) {
+                }
+                catch (e) {
                     exifObj.GPS[piexif.GPSIFD.GPSImgDirection] = [0, 1];
                     exifObj.GPS[piexif.GPSIFD.GPSImgDirectionRef] = 'T';
                 }
@@ -357,12 +369,14 @@ function geotag_image() {
                     });
                 }
                 setTimeout(move_image, 100, './' + files[0], './' + geotagging_dir + '/' + files[0]);
-            } else {
+            }
+            else {
                 if (ret_count > 200) {
                     mission_continue.flag = false;
                     mission_continue.mission = '';
                     fs.writeFileSync('./mission_continue.json', JSON.stringify(mission_continue, null, 4), 'utf8');
-                } else {
+                }
+                else {
                     ret_count++;
                 }
 
@@ -395,20 +409,26 @@ function move_image(from, to) {
                 status = 'Geotagging';
                 count++;
                 let msg = status + ' ' + count;
-                lib_mqtt_client.publish(my_status_topic, msg);
+                if (dr_mqtt_client) {
+                    dr_mqtt_client.publish(my_status_topic, msg);
+                }
                 try {
                     if (gps.hasOwnProperty('_id')) {
                         delete gps['_id'];
                     }
-                } catch (e) {
+                }
+                catch (e) {
                     // console.log(e);
                 }
-                lib_mqtt_client.publish(geotagged_position_topic, JSON.stringify(gps));
+                if (dr_mqtt_client) {
+                    dr_mqtt_client.publish(geotagged_position_topic, JSON.stringify(gps));
+                }
 
                 setTimeout(geotag_image, 200);
             });
         });
-    } catch (e) {
+    }
+    catch (e) {
         fs.stat(to, (err) => {
             if (err !== null && err.code === "ENOENT") {
                 console.log("[geotagging] 사진이 존재하지 않습니다.");
@@ -428,15 +448,16 @@ function setUSB(path, format) {
                 if (error) {
                     if (error.toString().includes('already mounted')) {
                         copyable = true;
-                        if (lib_mqtt_client !== null) {
-                            lib_mqtt_client.publish(check_usb_topic, 'OK');
+                        if (dr_mqtt_client) {
+                            dr_mqtt_client.publish(check_usb_topic, 'OK');
                         }
 
                         resolve('finish');
-                    } else {
+                    }
+                    else {
                         console.log('[setUSB] error:', error);
-                        if (lib_mqtt_client !== null) {
-                            lib_mqtt_client.publish(check_usb_topic, error.message);
+                        if (dr_mqtt_client) {
+                            dr_mqtt_client.publish(check_usb_topic, error.message);
                         }
 
                         reject(error);
@@ -448,31 +469,33 @@ function setUSB(path, format) {
                 if (stderr) {
                     if (stderr.toString().includes('already mounted')) {
                         copyable = true;
-                        if (lib_mqtt_client !== null) {
-                            lib_mqtt_client.publish(check_usb_topic, 'OK');
+                        if (dr_mqtt_client) {
+                            dr_mqtt_client.publish(check_usb_topic, 'OK');
                         }
 
                         resolve('finish');
-                    } else {
+                    }
+                    else {
                         console.log('[setUSB] stderr:', stderr);
-                        if (lib_mqtt_client !== null) {
-                            lib_mqtt_client.publish(check_usb_topic, error.message);
+                        if (dr_mqtt_client) {
+                            dr_mqtt_client.publish(check_usb_topic, error.message);
                         }
 
                         reject(stderr);
                     }
-                } else {
+                }
+                else {
                     copyable = true;
-                    if (lib_mqtt_client !== null) {
-                        lib_mqtt_client.publish(check_usb_topic, 'OK');
+                    if (dr_mqtt_client) {
+                        dr_mqtt_client.publish(check_usb_topic, 'OK');
                     }
 
                     resolve('finish');
                 }
             });
         }).catch((error) => {
-            if (lib_mqtt_client !== null) {
-                lib_mqtt_client.publish(check_usb_topic, error.message);
+            if (dr_mqtt_client) {
+                dr_mqtt_client.publish(check_usb_topic, error.message);
             }
 
             reject(error);
@@ -496,7 +519,8 @@ function crtDir(dir) {
                 if (stderr.includes('File exists')) {
                     console.log('Already [ ' + dir + ' ] exists');
                     resolve('finish');
-                } else {
+                }
+                else {
                     console.log('[crtDir] stderr:', stderr);
                     reject(stderr);
                 }
