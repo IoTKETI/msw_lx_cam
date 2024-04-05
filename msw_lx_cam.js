@@ -43,8 +43,8 @@ catch (e) {
         target: 'armv7l',
         description: '[name] [server]',
         scripts: "sh lib_lx_cam.sh",
-        data: ["Capture_Status", "Geotag_Status", "Send_Status", "Captured_GPS", "Geotagged_GPS", "Check_USBMem"],
-        control: ['Capture']
+        data: ["Capture_Status", "Geotag_Status", "Send_Status", "Captured_GPS", "Geotagged_GPS", "Check_USBMem", "init_res"],
+        control: ['Capture', 'init_req']
     };
     config.lib.push(add_lib);
 }
@@ -203,8 +203,10 @@ let disconnected = true;
 let MissionControl = {};
 
 function on_receive_from_muv(topic, str_message) {
+    // console.log('[' + topic + '] ' + str_message + '\n');
     let topic_arr = topic.split('/');
-    if (topic_arr[5] === config.name && topic_arr[6] === 'Capture') {
+
+    if (topic_arr[5] === config.name) {
         let recv_sequence;
 
         if (getType(str_message) === 'string') {
@@ -226,7 +228,7 @@ function on_receive_from_muv(topic, str_message) {
 let sequence = 0;
 
 function on_receive_from_lib(topic, str_message) {
-    // console.log('[' + topic + '] ' + str_message + '\n');
+    console.log('[' + topic + '] ' + str_message + '\n');
 
     let seq_str_message;
     if (getType(str_message) === 'string') {
@@ -282,7 +284,9 @@ function parseControlMission(topic, str_message) {
     try {
         let topic_arr = topic.split('/');
         let _topic = '/MUV/control/' + config.lib[0].name + '/' + topic_arr[topic_arr.length - 2];
-        dr_mqtt_client.publish(_topic, str_message);
+        dr_mqtt_client.publish(_topic, str_message, () => {
+            console.log(_topic, str_message)
+        });
     }
     catch (e) {
         console.log('[parseControlMission] data format of lib is not json');

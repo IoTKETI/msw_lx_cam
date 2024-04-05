@@ -16,6 +16,8 @@ let lib = {};
 
 let dr_mqtt_client = null;
 let control_topic = '';
+let req_topic = '';
+let res_topic = '';
 let my_status_topic = '';
 let captured_position_topic = '';
 let gpi_topic = '';
@@ -29,6 +31,7 @@ let capture_flag = false;
 let count = 0;
 
 let status = 'Init';
+let camera_model_name = '';
 
 init();
 
@@ -43,12 +46,14 @@ function init() {
         lib.target = 'armv7l';
         lib.description = "[name]";
         lib.scripts = "./lib_lx_cam.js";
-        lib.data = ["Capture_Status", "Geotag_Status", "Send_Status", "Captured_GPS", "Geotagged_GPS", "Check_USBMem"];
-        lib.control = ['Capture'];
+        lib.data = ["Capture_Status", "Geotag_Status", "Send_Status", "Captured_GPS", "Geotagged_GPS", "Check_USBMem", "init_res"];
+        lib.control = ['Capture', 'init_req'];
     }
 
     control_topic = '/MUV/control/' + lib["name"] + '/' + lib["control"][0];
+    req_topic = '/MUV/control/' + lib["name"] + '/' + lib["control"][1];
 
+    res_topic = '/MUV/data/' + lib["name"] + '/' + lib["data"][6];
     my_status_topic = '/MUV/data/' + lib["name"] + '/' + lib["data"][0];
     captured_position_topic = '/MUV/data/' + lib["name"] + '/' + lib["data"][3];
 
@@ -69,7 +74,8 @@ function init() {
             }
             else if (data.toString().includes('Camera summary:')) {
                 let summary = data.toString().split('\n');
-                console.log('[checkCamera] Connected with ' + summary[2].substring(7, summary.length - 2));
+                camera_model_name = summary[2].substring(7, summary.length - 2);
+                console.log('[checkCamera] Connected with ' + camera_model_name);
             }
         });
         camera_test.stderr.on('data', (data) => {
@@ -152,16 +158,21 @@ function dr_mqtt_connect(broker_ip, fc, control) {
         dr_mqtt_client = mqtt.connect(connectOptions);
 
         dr_mqtt_client.on('connect', () => {
-            console.log('[capture_dr_mqtt_connect] connected to ' + broker_ip);
+            console.log('dr_mqtt_client is connected to ( ' + broker_ip + ' )');
 
             if (gpi_topic !== '') {
                 dr_mqtt_client.subscribe(gpi_topic + '/#', () => {
-                    console.log('[capture_lib_mqtt] lib_sub_fc_topic: ' + gpi_topic + '/#');
+                    console.log('[dr_mqtt_client] gpi_topic: ' + gpi_topic + '/#');
                 });
             }
             if (control_topic !== '') {
                 dr_mqtt_client.subscribe(control_topic, () => {
-                    console.log('[capture_lib_mqtt] lib_sub_control_topic: ' + control_topic);
+                    console.log('[dr_mqtt_client] control_topic: ' + control_topic);
+                });
+            }
+            if (req_topic !== '') {
+                dr_mqtt_client.subscribe(req_topic, () => {
+                    console.log('[dr_mqtt_client] req_topic: ' + req_topic);
                 });
             }
 
@@ -204,6 +215,9 @@ function dr_mqtt_connect(broker_ip, fc, control) {
                         process.kill(capture_command.pid, 'SIGINT');
                     }
                 }
+            }
+            else if (topic === req_topic) {
+                dr_mqtt_client.publish(res_topic, camera_model_name);
             }
         });
 

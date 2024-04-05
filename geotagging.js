@@ -97,8 +97,8 @@ function init() {
         lib.target = 'armv7l';
         lib.description = "[name]";
         lib.scripts = "node ./geotagging.js";
-        lib.data = ["Capture_Status", "Geotag_Status", "Send_Status", "Captured_GPS", "Geotagged_GPS", "Check_USBMem"];
-        lib.control = ['Capture'];
+        lib.data = ["Capture_Status", "Geotag_Status", "Send_Status", "Captured_GPS", "Geotagged_GPS", "Check_USBMem", "init_res"];
+        lib.control = ['Capture', 'init_req'];
 
         fs.writeFileSync('./' + my_lib_name + '.json', JSON.stringify(lib, null, 4), 'utf8');
     }

@@ -9,9 +9,10 @@
         "Send_Status",
         "Captured_GPS",
         "Geotagged_GPS",
-        "Check_USBMem"
+        "Check_USBMem",
+        "init_res"
     ],
     "control": [
-        "Capture"
+        "Capture", "init_req"
     ]
 }

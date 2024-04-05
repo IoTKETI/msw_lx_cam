@@ -43,13 +43,14 @@ function init() {
     lib = {};
     try {
         lib = JSON.parse(fs.readFileSync('./' + my_lib_name + '.json', 'utf8'));
-    } catch (e) {
+    }
+    catch (e) {
         lib.name = my_lib_name;
         lib.target = 'armv7l';
         lib.description = "[name]";
         lib.scripts = './' + my_lib_name;
-        lib.data = ["Capture_Status", "Geotag_Status", "Send_Status", "Captured_GPS", "Geotagged_GPS", "Check_USBMem"];
-        lib.control = ['Capture'];
+        lib.data = ["Capture_Status", "Geotag_Status", "Send_Status", "Captured_GPS", "Geotagged_GPS", "Check_USBMem", "init_res"];
+        lib.control = ['Capture', 'init_req'];
 
         fs.writeFileSync('./' + my_lib_name + '.json', JSON.stringify(lib, null, 4), 'utf8');
     }
@@ -68,7 +69,8 @@ function init() {
             status = 'Start';
             let msg = status + ' ' + send_dir;
             lib_mqtt_client.publish(my_status_topic, msg);
-        } else {
+        }
+        else {
             console.log('Previous photos do not exist.');
             // TODO: Mobius에 로그 업데이트 여부?
         }
@@ -122,7 +124,8 @@ function lib_mqtt_connect(broker_ip, port, control) {
                                 console.log(err);
                                 setTimeout(init, 50);
                                 return
-                            } else {
+                            }
+                            else {
                                 if (files.length > 0) {
                                     files.forEach((file) => {
                                         // fs.rmSync('./' + geotagging_dir + '/' + file);
@@ -142,7 +145,8 @@ function lib_mqtt_connect(broker_ip, port, control) {
                         lib_mqtt_client.publish(my_status_topic, msg);
                     }
                 }
-            } else {
+            }
+            else {
                 console.log('From ' + topic + 'message is ' + message.toString());
             }
         });
@@ -166,18 +170,21 @@ function send_image() {
                     console.log(err);
                     setTimeout(send_image, 50);
                     return
-                } else {
+                }
+                else {
                     let image_file = '';
                     if (files.length > 0) {
                         if (files[index] !== undefined) {
                             if (files[index].substring(files[index].length - 4, files[index].length).toLowerCase() === '.jpg') {
                                 image_file = files[index];
-                            } else {
+                            }
+                            else {
                                 index++;
                                 setTimeout(send_image, 50);
                                 return
                             }
-                        } else {
+                        }
+                        else {
                             setTimeout(send_image, 50);
                             return
                         }
@@ -225,7 +232,8 @@ function send_image() {
 
                                     setTimeout(send_image, 500);
                                     return
-                                } else {
+                                }
+                                else {
                                     console.timeEnd('Send-' + image_file);
 
                                     console.log('status code:', response.status, 'response message: ' + JSON.stringify(response.data));
@@ -239,14 +247,16 @@ function send_image() {
                                 console.timeEnd('Send-' + image_file);
                                 if (error.response) {
                                     console.log('response: ', error.response);
-                                } else {
+                                }
+                                else {
                                     console.log('catch -', error)
                                 }
                                 // 전송 실패 시 현재 사진 계속 전송 시도
                                 setTimeout(send_image, 500);
                                 return
                             });
-                    } else {
+                    }
+                    else {
                         if (status === 'Started') {
                             empty_count++;
                             console.log('Waiting - ' + empty_count);
@@ -287,21 +297,25 @@ function send_image() {
                                 // status = 'Start';
                                 // msg = status + ' ' + send_dir;
                                 // lib_mqtt_client.publish(my_status_topic, msg);
-                            } else {
+                            }
+                            else {
                                 setTimeout(send_image, 100);
                                 return
                             }
-                        } else {
+                        }
+                        else {
                             setTimeout(send_image, 100);
                             return
                         }
                     }
                 }
             });
-        } else {
+        }
+        else {
             // 'Started'가 아닌 상태
         }
-    } catch (e) {
+    }
+    catch (e) {
         console.log(e)
         setTimeout(send_image, 100);
         return
@@ -329,7 +343,8 @@ function check_last_dir() {
                 }
             });
             resolve('OK');
-        } catch (e) {
+        }
+        catch (e) {
             reject('fail');
         }
     });
