@@ -124,7 +124,8 @@ function init() {
         mission_continue.flag = false;
         mission_continue.mission = '';
     }
-
+    // TODO: USB 내 사진 48시간 후 삭제하도록 수정
+    // TODO: 보드 내 48시간 후 사진 정리
 
     my_status_topic = '/MUV/data/' + lib["name"] + '/' + lib["data"][1];
     geotagged_position_topic = '/MUV/data/' + lib["name"] + '/' + lib["data"][4];
