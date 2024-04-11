@@ -160,9 +160,11 @@ function dr_mqtt_connect(broker_ip, fc, control) {
         dr_mqtt_client.on('connect', () => {
             console.log('dr_mqtt_client is connected to ( ' + broker_ip + ' )');
 
+            dr_mqtt_client.publish(my_status_topic, status);
+
             if (gpi_topic !== '') {
-                dr_mqtt_client.subscribe(gpi_topic + '/#', () => {
-                    console.log('[dr_mqtt_client] gpi_topic: ' + gpi_topic + '/#');
+                dr_mqtt_client.subscribe(gpi_topic, () => {
+                    console.log('[dr_mqtt_client] gpi_topic: ' + gpi_topic);
                 });
             }
             if (control_topic !== '') {
@@ -175,8 +177,6 @@ function dr_mqtt_connect(broker_ip, fc, control) {
                     console.log('[dr_mqtt_client] req_topic: ' + req_topic);
                 });
             }
-
-            dr_mqtt_client.publish(my_status_topic, status);
         });
 
         dr_mqtt_client.on('message', (topic, message) => {
@@ -228,14 +228,14 @@ function dr_mqtt_connect(broker_ip, fc, control) {
 }
 
 function capture_image() {
-    console.time('capture');
+    // console.time('capture');
     // gphoto2 --capture-image-and-download --filename 20%y-%m-%dT%H:%M:%S.jpg --interval 3 --folder ./
     capture_command = spawn("gphoto2", ['--capture-image-and-download', '--filename', '20%y-%m-%dT%H_%M_%S.jpg', '--interval', interval, '--folder', './']);
 
     capture_command.stdout.on('data', (data) => {
         // console.log('data: ' + data);
 
-        console.timeEnd('capture');
+        // console.timeEnd('capture');
         if (data.toString().split('\n')[1].includes('.jpg')) {
             let data_arr = data.toString().split('\n')[1].split(' ')
             for (let idx in data_arr) {
@@ -255,9 +255,8 @@ function capture_image() {
             let msg = status + ' ' + count;
             dr_mqtt_client.publish(my_status_topic, msg);
         }
-        console.time('capture');
+        // console.time('capture');
     });
-
     capture_command.stderr.on('data', (data) => {
         if (data.toString().includes("Operation cancelled.")) {
             status = 'Ready';
@@ -297,7 +296,7 @@ function capture_image() {
     capture_command.on('exit', (code) => {
         console.log(count, '[capture_command] exit: ' + code);
 
-        console.timeEnd('capture');
+        // console.timeEnd('capture');
         if (code === null) {
             status = 'Ready';
             dr_mqtt_client.publish(my_status_topic, status);
