@@ -257,6 +257,7 @@ function dr_mqtt_connect(broker_ip, port) {
 
 let gps;
 let img_count = 0;
+let last_file_count = 0;
 
 function geotag_image() {
     fs.readdir('./', (err, files) => {
@@ -268,9 +269,9 @@ function geotag_image() {
         else {
             files = files.filter(file => file.toLowerCase().includes('.jpg'));
 
-            if (files.length > 0) {
+            if (files.length > 1) {
                 ret_count = 0;
-                console.time('geotag');
+                // console.time('geotag');
 
                 let jpeg;
                 let data;
@@ -344,7 +345,8 @@ function geotag_image() {
                 let newJpeg = Buffer.from(newData, "binary");
 
                 fs.writeFileSync(files[0], newJpeg);
-                console.timeEnd('geotag');
+                // console.timeEnd('geotag');
+                console.log('geotagged -->', files[0]);
 
                 if (copyable) {
                     // fs.copyFile('./' + files[0], usb_memory + '/' + files[0], (err) => {
@@ -370,6 +372,115 @@ function geotag_image() {
                     });
                 }
                 setTimeout(move_image, 100, './' + files[0], './' + geotagging_dir + '/' + files[0]);
+            }
+            else if (files.length === 1) {
+                last_file_count++;
+                if (last_file_count > 30) {
+                    ret_count = 0;
+                    // console.time('geotag');
+
+                    let jpeg;
+                    let data;
+                    let exifObj;
+                    try {
+                        jpeg = fs.readFileSync(files[0]);
+                        data = jpeg.toString("binary");
+                        exifObj = piexif.load(data);
+                    }
+                    catch (e) {
+                        // 이미지 exif 불러올 때 문제 발생할 경우 휴지통(Wastebasket) 폴더로 이동
+                        console.log(e.message, ' ', files[0]);
+                        fs.renameSync('./' + files[0], './Wastebasket/geotagging/' + files[0]);
+
+                        setTimeout(geotag_image, 100);
+                        return
+                    }
+                    try {
+                        gps = gps_filename.findOne({image: files[0]})._settledValue;
+                    }
+                    catch (e) {
+                        let edit_file = moment(moment(files[0].substr(0, files[0].length - 4)).add("-1", "s")).format("YYYY-MM-DDTHH:mm:ss") + '.jpg';
+                        gps = gps_filename.findOne({image: edit_file})._settledValue;
+                        console.log(edit_file);
+                    }
+                    try {
+                        if (gps.hasOwnProperty('lat')) {
+                            exifObj.GPS[piexif.GPSIFD.GPSLatitudeRef] = (gps.lat / 10000000) < 0 ? 'S' : 'N';
+                            exifObj.GPS[piexif.GPSIFD.GPSLatitude] = Degree2DMS(gps.lat / 10000000);
+                        }
+                    }
+                    catch (e) {
+                        exifObj.GPS[piexif.GPSIFD.GPSLatitude] = Degree2DMS(0.0);
+                    }
+                    try {
+                        if (gps.hasOwnProperty('lon')) {
+                            exifObj.GPS[piexif.GPSIFD.GPSLongitudeRef] = (gps.lon / 10000000) < 0 ? 'W' : 'E';
+                            exifObj.GPS[piexif.GPSIFD.GPSLongitude] = Degree2DMS(gps.lon / 10000000);
+                        }
+                    }
+                    catch (e) {
+                        exifObj.GPS[piexif.GPSIFD.GPSLongitude] = Degree2DMS(0.0);
+                    }
+                    try {
+                        if (gps.hasOwnProperty('alt')) {
+                            if (gps.alt < 0.0) {
+                                gps.alt = 0.0;
+                            }
+                            exifObj.GPS[piexif.GPSIFD.GPSAltitude] = [gps.alt, 1000];
+                            exifObj.GPS[piexif.GPSIFD.GPSAltitudeRef] = 0;
+                        }
+                    }
+                    catch (e) {
+                        exifObj.GPS[piexif.GPSIFD.GPSAltitude] = [0.0, 1000];
+                        exifObj.GPS[piexif.GPSIFD.GPSAltitudeRef] = 0;
+                    }
+                    try {
+                        if (gps.hasOwnProperty('hdg')) {
+                            exifObj.GPS[piexif.GPSIFD.GPSImgDirection] = [gps.hdg, 1];
+                            exifObj.GPS[piexif.GPSIFD.GPSImgDirectionRef] = 'T';
+                        }
+                    }
+                    catch (e) {
+                        exifObj.GPS[piexif.GPSIFD.GPSImgDirection] = [0, 1];
+                        exifObj.GPS[piexif.GPSIFD.GPSImgDirectionRef] = 'T';
+                    }
+
+                    let exifbytes = piexif.dump(exifObj);
+
+                    let newData = piexif.insert(exifbytes, data);
+                    let newJpeg = Buffer.from(newData, "binary");
+
+                    fs.writeFileSync(files[0], newJpeg);
+                    // console.timeEnd('geotag');
+
+                    if (copyable) {
+                        // fs.copyFile('./' + files[0], usb_memory + '/' + files[0], (err) => {
+                        //     if (err) {
+                        //         console.log(err);
+                        //     }
+                        //     console.log('Copy ' + './' + files[0] + ' to ' + usb_memory + '/' + files[0]);
+                        //     setTimeout(move_image, 100, './' + files[0], './' + geotagging_dir + '/' + files[0]);
+                        //     img_count++;
+                        // });
+                        exec("echo " + pw + " | sudo -S cp " + "./" + files[0] + ' ' + usb_memory + "/", (error, stdout, stderr) => {
+                            if (error) {
+                                console.log('[copy] error:', error);
+                            }
+                            if (stdout) {
+                                console.log('[copy] stdout: ' + stdout);
+                            }
+                            if (stderr) {
+                                console.log('[copy] stderr: ' + stderr);
+                            }
+                            console.log('Copy ' + './' + files[0] + ' to ' + usb_memory + '/' + files[0]);
+                            img_count++;
+                        });
+                    }
+                    setTimeout(move_image, 100, './' + files[0], './' + geotagging_dir + '/' + files[0]);
+                }
+                else {
+                    setTimeout(geotag_image, 100);
+                }
             }
             else {
                 if (ret_count > 200) {

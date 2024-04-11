@@ -246,6 +246,7 @@ function capture_image() {
                     if (gpi_data.hasOwnProperty('_id')) {
                         delete gpi_data['_id'];
                     }
+                    console.log('captured -->', data_arr[idx])
                     dr_mqtt_client.publish(captured_position_topic, JSON.stringify(gpi_data));
                     break;
                 }
