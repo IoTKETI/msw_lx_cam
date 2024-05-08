@@ -57,7 +57,7 @@ function init() {
     my_status_topic = '/MUV/data/' + lib["name"] + '/' + lib["data"][0];
     captured_position_topic = '/MUV/data/' + lib["name"] + '/' + lib["data"][3];
 
-    gpi_topic = '/MUV/tele/' + lib.name;
+    gpi_topic = '/MUV/tele/' + lib.name + '/gpi';
 
     dr_mqtt_connect('127.0.0.1');
 
@@ -184,7 +184,7 @@ function dr_mqtt_connect(broker_ip, fc, control) {
             topic_arr.pop();
             let _topic = topic_arr.join('/');
 
-            if (_topic === gpi_topic) {
+            if (topic === gpi_topic) {
                 gpi_data = JSON.parse(message.toString());
                 // console.log(gpi_data);
             }
